@@ -1,0 +1,8 @@
+{
+  "name": "mise-seo-template",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "wrangler": "4.157.0"
+  }
+}

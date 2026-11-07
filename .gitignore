@@ -1,0 +1,14 @@
+# Go test caches and editor files
+*.test
+*.out
+.DS_Store
+# This checkout's build (mise run tool:build)
+bin/
+# goreleaser's snapshot (mise run tool:release --dry-run)
+dist/
+# Claude Code's worktrees of this checkout, for its agents
+.claude/worktrees/
+# mise's override for one machine: mise-check's own checkout pins its build there (local)
+.mise/config.local.toml
+# Installed packages
+node_modules/

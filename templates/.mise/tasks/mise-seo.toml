@@ -1,0 +1,71 @@
+# This repo's pins and mise tasks, with mise-seo. Start with: mise run mise-seo (what's done, and what to run next).
+# One task per command: mise run mise-seo:<command> runs mise-seo <command>.
+# Each passes its usage values with mise's own templates ({{usage.<name>}}), never shell syntax, so it runs the same
+# under sh, cmd and PowerShell.
+# Written by mise-seo (github.com/joeblew999/mise-seo): don't edit it. .mise/config.toml pins its version.
+
+["mise-seo"]
+description = "what's done for the repo, and what to run next"
+usage = 'flag "--json" help="one JSON document on stdout, instead of text"'
+run = 'mise-seo{% if usage.json %} --json{% endif %}'
+
+["mise-seo:init"]
+description = "writes mise-seo's files again: its tasks, the workflow, the skill, the docs, the hook"
+run = "mise-seo init"
+
+["mise-seo:check"]
+description = "the repo's rules: its mise files by misecheck, its skills against their tasks, mise-seo's files current, its two pins (the binary in mise, the packages in go.mod) at one release"
+usage = 'flag "--json" help="one JSON document on stdout, instead of text"'
+run = 'mise-seo check{% if usage.json %} --json{% endif %}'
+
+["mise-seo:show"]
+description = "the same as mise run mise-seo"
+usage = 'flag "--json" help="one JSON document on stdout, instead of text"'
+run = 'mise-seo show{% if usage.json %} --json{% endif %}'
+
+["mise-seo:verify"]
+description = "what GitHub runs: each pin consistent with what pins it, the repo's setup and test, then check"
+run = "mise-seo verify"
+
+["mise-seo:update"]
+description = "every pin at its newest: the three below, in order, then mise-seo's two pins at one release"
+usage = 'flag "--no-major" help="no major moves: packages within their ranges, Go modules within their major"; flag "--json" help="one JSON document on stdout, every pin before and after, instead of text"'
+run = 'mise-seo update{% if usage.no_major %} --no-major{% endif %}{% if usage.json %} --json{% endif %}'
+
+["mise-seo:update-mise"]
+description = "the tools in the repo's mise files"
+usage = 'flag "--no-major" help="no major moves: packages within their ranges, Go modules within their major"; flag "--json" help="one JSON document on stdout, every pin before and after, instead of text"'
+run = 'mise-seo update-mise{% if usage.no_major %} --no-major{% endif %}{% if usage.json %} --json{% endif %}'
+
+["mise-seo:update-packages"]
+description = "package.json and its lockfile, through aube"
+usage = 'flag "--no-major" help="no major moves: packages within their ranges, Go modules within their major"; flag "--json" help="one JSON document on stdout, every pin before and after, instead of text"'
+run = 'mise-seo update-packages{% if usage.no_major %} --no-major{% endif %}{% if usage.json %} --json{% endif %}'
+
+["mise-seo:update-go"]
+description = "every go.mod's toolchain line and modules, majors too, their import paths rewritten"
+usage = 'flag "--no-major" help="no major moves: packages within their ranges, Go modules within their major"; flag "--json" help="one JSON document on stdout, every pin before and after, instead of text"'
+run = 'mise-seo update-go{% if usage.no_major %} --no-major{% endif %}{% if usage.json %} --json{% endif %}'
+
+["mise-seo:show-users"]
+description = "which of the owner's repos use it, at what version, the behind ones marked"
+usage = 'flag "--json" help="one JSON document on stdout, instead of text"'
+run = 'mise-seo show-users{% if usage.json %} --json{% endif %}'
+
+["mise-seo:template"]
+description = "the template's little app, its go.mod and packages; it never writes over a file"
+run = "mise-seo template"
+
+["mise-seo:new-tool"]
+description = "a new mise tool repo in an empty folder: mise-seo at its release, copied and renamed for the module, its packages imported instead"
+usage = 'arg "<module>" help="the new repo, github.com/<owner>/<name>: mise-seo is renamed <name> in it"; flag "--from <folder>" help="copy this checkout of mise-seo instead of its release"'
+run = 'mise-seo new-tool{% if usage.from %} --from "{{usage.from}}"{% endif %} "{{usage.module}}"'
+
+["mise-seo:show-version"]
+description = "its version"
+usage = 'flag "--json" help="one JSON document on stdout, instead of text"'
+run = 'mise-seo show-version{% if usage.json %} --json{% endif %}'
+
+["mise-seo:show-help"]
+description = "every command and its flags"
+run = "mise-seo show-help"

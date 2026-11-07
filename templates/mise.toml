@@ -1,0 +1,27 @@
+# The repo's own tools and tasks: node and aube, which install its packages (mise run setup), and its Go program.
+# mise-seo's tasks are its own file, .mise/tasks/mise-seo.toml, and its pin .mise/config.toml, which mise-seo init
+# writes (then mise run mise-seo shows the way). mise run mise-seo:update moves every pin here, in package.json and
+# in go.mod.
+
+[settings]
+# go.mod's toolchain line is the Go pin; this makes mise install honour it.
+idiomatic_version_file_enable_tools = ["go"]
+# mise 2026.10 fails to install aube while it fetches its agent skill (a 404); it isn't needed.
+skills.fetch = false
+
+[tools]
+node = "26.13.0"   # runs the packages
+aube = { version = "2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"] }     # installs the packages from package.json
+
+# setup and test are the tasks mise-seo:verify runs by name, here and on GitHub: every repo's, first.
+[tasks.setup]
+description = "Install the pinned packages (mise-seo:verify runs it first)"
+run = "aube install"
+
+[tasks.test]
+description = "The app's own tests (mise-seo:verify runs them, then check)"
+run = "go test ./..."
+
+[tasks."app:start"]
+description = "Run the app"
+run = "go run ./app"
