@@ -39,8 +39,9 @@ func TestShow(t *testing.T) {
 }
 
 // TestOwnFiles: init writes mise-seo's parts of the repo's own files as this version has them, and nothing else of
-// them: its pin and its own name beside the repo's in minimum_release_age_excludes (miseconfig), the .gitignore lines,
-// the hook in a .claude/settings.json with a hook of its own; check says to run init until it has.
+// them: its pin and its own name beside the repo's in minimum_release_age_excludes (toolfiles), the .gitignore lines,
+// the hook in a .claude/settings.json with a hook of its own; check says to run init until it has. And mise-check's own
+// init gives the repo mise-check's tasks, and its parts of the same files.
 func TestOwnFiles(t *testing.T) {
 	r := repo{dir: t.TempDir()}
 	r.initRepo([]string{"--site", "https://shop.example.com"})
@@ -58,7 +59,7 @@ func TestOwnFiles(t *testing.T) {
 		t.Fatalf("after init: %q", s.Problems)
 	}
 	cfg, ignore, settings := read(".mise/config.toml"), read(".gitignore"), read(".claude/settings.json")
-	for _, want := range []string{"# the repo's own\n", `minimum_release_age_excludes = ["npm:*", "github:joeblew999/mise-seo"]`, "\nuse_versions_host = false\n", `"github:joeblew999/mise-seo" = "local"`, `node = "26"`} {
+	for _, want := range []string{"# the repo's own\n", `minimum_release_age_excludes = ["npm:*", "github:joeblew999/mise-seo", "github:joeblew999/mise-check"]`, "\nuse_versions_host = false\n", `"github:joeblew999/mise-seo" = "local"`, `"github:joeblew999/mise-check" = "`, `node = "26"`} {
 		if !strings.Contains(cfg, want) {
 			t.Errorf("config.toml has no %q:\n%s", want, cfg)
 		}
@@ -66,8 +67,11 @@ func TestOwnFiles(t *testing.T) {
 	if !strings.HasPrefix(ignore, "bin/\n") || !strings.Contains(ignore, ".mise/config.local.toml") {
 		t.Errorf(".gitignore:\n%s", ignore)
 	}
-	if !strings.Contains(settings, `"opus"`) || !strings.Contains(settings, "own.sh") || !strings.Contains(settings, templates.HookFile) {
+	if !strings.Contains(settings, `"opus"`) || !strings.Contains(settings, "own.sh") || !strings.Contains(settings, templates.HookFile) || !strings.Contains(settings, "mise-check-session-start.sh") {
 		t.Errorf("settings.json:\n%s", settings)
+	}
+	if !strings.Contains(read(".mise/tasks/mise-check.toml"), `["mise-check:check"]`) {
+		t.Error("init gave the repo no mise-check tasks: mise-check's own init, toolfiles.MiseCheckInit")
 	}
 }
 

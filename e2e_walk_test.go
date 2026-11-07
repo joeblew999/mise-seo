@@ -42,8 +42,17 @@ func TestWalkTemplate(t *testing.T) { seoWalk.Template(t, "templates") }
 // TestWalkNewRepo walks a new repo made as docs/seo/README.md says (mise run new-repo:e2e).
 func TestWalkNewRepo(t *testing.T) { seoWalk.NewRepo(t) }
 
-// TestSteps checks that the steps are the template's numbered tasks, in their order, so the walk is that file's walk.
-func TestSteps(t *testing.T) { walk.CheckSteps(t, "templates/.mise/tasks/mise-seo.toml", steps) }
+// TestSteps checks that the walk is the template's tasks file's whole walk: every task a step, once, or one the walk
+// doesn't run as a step, with why. The steps' order is the walk's own, a person's.
+func TestSteps(t *testing.T) {
+	walk.CheckSteps(t, "templates/.mise/tasks/mise-seo.toml", steps, map[string]string{
+		"seo":              "it is seo:show, which the walk runs",
+		"seo:setup":        "it makes a Google Cloud project, its APIs and a service account with a person's own gcloud login, and stores the key in their fnox: the walk checks instead that each task that asks Google says what it needs",
+		"seo:template":     "it is how the walk makes a new repo (newRepo), and writes nothing in a repo with an app of its own",
+		"seo:show-version": "the walk runs it first, to say which build of mise-seo it walks (versions)",
+		"seo:show-help":    "it only prints every command",
+	})
+}
 
 // walker is the steps run on a repo in their order: what each step's Check is given.
 type walker struct{ walk.Repo }

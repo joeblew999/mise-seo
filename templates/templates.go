@@ -1,6 +1,9 @@
 // Package templates is mise-seo's template, embedded for mise-seo: a whole repo that runs where it is, in two halves.
 // The tool's half is what mise-seo init writes into any repo, at the same paths: the tasks and mise-seo's pin
 // (.mise/), the GitHub workflow, the Claude Code hook and its settings, the agent skill, the docs and the .gitignore.
+// Beside it are mise-check's own files, which init has mise-check's init write (its tasks, workflow, skill, docs and
+// hook, and its parts of .mise/config.toml, .gitignore and .claude/settings.json), so the template is what init
+// leaves in a repo; they aren't the tool half, which never wraps mise-check.
 // The rest is the template's little app, which mise-seo template writes into a repo with no Go program yet: two pages
 // in plain Go behind seo.Site (app/), their test auditing them as Googlebot reads them, the mise.toml of its tasks,
 // and its README; seo.toml, the repo's own, has the app's site on this machine (AppSite). This file is the template's
@@ -15,7 +18,7 @@ import (
 
 //go:embed .mise/tasks/mise-seo.toml .mise/config.toml
 //go:embed .github/workflows/seo.yml
-//go:embed .claude/hooks/mise-seo-session-start.sh .claude/settings.json .claude/skills
+//go:embed .claude/hooks/mise-seo-session-start.sh .claude/settings.json .claude/skills/seo
 //go:embed docs/seo
 //go:embed .gitignore
 var tool embed.FS

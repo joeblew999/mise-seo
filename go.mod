@@ -7,7 +7,7 @@ toolchain go1.27.3
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/gsxhq/gsx v0.5.0
-	github.com/joeblew999/mise-check v0.4.32
+	github.com/joeblew999/mise-check v0.4.35
 	golang.org/x/net v0.62.0
 )
 

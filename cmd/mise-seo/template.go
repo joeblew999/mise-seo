@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/joeblew999/mise-check/toolfiles"
 	"github.com/joeblew999/mise-seo/seo/config"
 	"github.com/joeblew999/mise-seo/templates"
 )
@@ -67,7 +68,7 @@ func (r repo) template(args []string) {
 		fmt.Printf("✓ mise.toml is the repo's own: left as it is. The template's app runs and tests with these:\n\n%s\n", tasks)
 	} else {
 		writeFile(filepath.Join(r.dir, "mise.toml"), tasks)
-		trustConfig(r.dir, "mise.toml")
+		toolfiles.Trust(r.dir, "mise.toml", nil)
 	}
 	r.setUpApp()
 	fmt.Println("✓ the template's app: next, mise run seo, then mise run serve and, beside it, mise run seo:audit")

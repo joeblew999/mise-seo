@@ -4,7 +4,8 @@
 # .mise/tasks), in an order the walk and the docs page say; the walks (e2e_walk_test.go) run them in order, on the template or on a new repo made from it. Each
 # task here is named for what it acts on (noun:verb):
 #   root: this repo itself
-#     mise run root:ci                 what GitHub's CI runs, here the same: the checks at once, then the walks in turn
+#     mise run root:ci                 what GitHub's CI runs, here the same: root:verify
+#     mise run root:verify             the checks at once, then the walks in turn
 #     mise run root:check-mise         misecheck on this very file: one line each, its Go there, usage by name, no shell syntax
 #   tool: mise-seo itself, its binary and its packages
 #     mise run tool:test               go vet, the Go tests (none of them walk), the release config
@@ -27,16 +28,20 @@ idiomatic_version_file_enable_tools = ["go"]
 skills.fetch = false
 
 [tools]
-usage = { version = "7.2.0", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
+usage = { version = "7.3.0", workflow = "publish-cli.yml" }    # --help and tab-completion for the tasks' flags
 goreleaser = "2.20.0"   # the release's binaries (.goreleaser.yaml)
 
 [tasks."root:ci"]
-description = "What GitHub's CI runs (ci.yml runs exactly this), here the same: tool:test, root:check-mise and template:check-mise at once, then the walks one after the other (template:e2e, new-repo:e2e), as both serve an app and run its tasks"
+description = "What GitHub's CI runs (ci.yml runs exactly this), here the same: root:verify, and nothing CI adds"
+run = "mise run root:verify"
+
+[tasks."root:verify"]
+description = "The checks and the walks: tool:test, root:check-mise and template:check-mise at once, then the walks one after the other (template:e2e, new-repo:e2e), as both serve an app and run its tasks"
 depends = ["tool:test", "root:check-mise", "template:check-mise"]
 run = "mise run template:e2e && mise run new-repo:e2e"
 
 [tasks."root:check-mise"]
-description = "TestRootMise on this repo's own mise.toml, the file this task is in: each task one line, the Go it runs there, its usage passed by name, no POSIX shell syntax, so every task here runs on Windows too. Not the Go side: the root runs Go, it isn't a binary's tasks (mise_test.go)"
+description = "TestRootMise on this repo's own mise.toml, the file this task is in: each task one line, the Go it runs there, its usage passed by name, no POSIX shell syntax, so every task here runs on Windows too; and the shape of a mise tool repo (misecheck.CheckToolRepo): root:ci and root:verify, ci.yml running only root:ci, the README's opening, no template task wrapping mise-check"
 run = 'go test . -run "^TestRootMise$" -count=1 -v'
 
 [tasks."tool:test"]

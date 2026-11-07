@@ -3,3 +3,6 @@
 *.out
 # mise's override for one machine, never committed
 .mise/config.local.toml
+.DS_Store
+# Installed packages
+node_modules/

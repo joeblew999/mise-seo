@@ -52,7 +52,12 @@ one entry point that ships, with the packages; everything this repo runs for its
 - Every tool is pinned and comes from mise: mise-seo in a repo's `.mise/config.toml`, fnox and gcloud in the tasks
   that run them (their `tools`), Go in `go.mod`. Lighthouse runs on Google's servers (PageSpeed Insights), so there's
   no Node and no Chrome.
-- Every task is one line, with its flags passed by name, and no POSIX shell syntax, so it runs in Windows' cmd too:
+- The shared machinery is mise-check's, imported at the release `.mise/config.toml` pins, never copied: init writes
+  the tool half with `toolfiles` and runs mise-check's own init (`toolfiles.MiseCheckInit`), so a repo gets
+  mise-check's tasks themselves, never a wrapper of them; the release is `release.Run`. So the template has
+  mise-check's files beside its own, as init leaves them.
+- Every task is one line, named `seo:<command>` (never numbered), with its flags passed by name, and no POSIX shell
+  syntax, so it runs in Windows' cmd too:
   logic is Go, a file per command (`x.go` holding `x`, `main.go`'s `case "x"`), and `commands` in `main.go` is the
   one source of each task's line, which the tasks file, the skill and the docs page have word for word
   (`TestCommands`).
@@ -65,7 +70,8 @@ Every task is named noun:verb, and runs what it needs first: run the furthest yo
 
 | Task | What | When |
 |---|---|---|
-| `root:ci` | What CI runs: `tool:test`, `root:check-mise`, `template:check-mise`, then both walks | Before every push |
+| `root:ci` | Exactly what CI runs: `root:verify` | Before every push |
+| `root:verify` | `tool:test`, `root:check-mise`, `template:check-mise` at once, then both walks in turn | After every change |
 | `tool:test` | `go vet`, the Go tests (none walk), `goreleaser check` | After every change |
 | `tool:build` | This checkout's build, `bin/mise-seo` | Any task needs it |
 | `tool:install` | That build as the mise version `local`, for the template (`templates/.mise/config.local.toml`, never committed) and any repo on this machine (`mise use github:joeblew999/mise-seo@local` there) | To try a change in another repo, never by waiting on a release |
@@ -73,7 +79,7 @@ Every task is named noun:verb, and runs what it needs first: run the furthest yo
 | `template:check-mise` | `TestTemplateMise`: misecheck on the template's tasks against the binary's Go, the walk, the skill and the docs page, both ways | After a change to a task or a command |
 | `template:e2e` | `TestWalkTemplate`: the walk on the template, where it is | After every change |
 | `new-repo:e2e` | `TestWalkNewRepo`: the walk on a new repo (`--version` pins a release) | After every change |
-| `root:check-mise` | `TestRootMise` on this repo's own `mise.toml` | After a change to this file's tasks |
+| `root:check-mise` | `TestRootMise` on this repo's own `mise.toml`, and the shape of a mise tool repo (`misecheck.CheckToolRepo`) | After a change to this file's tasks |
 
 mise-check is used here as in any repo, through its own tasks, which `mise-check init` wrote: `mise run mise-check`
 (what's done, what's next), `mise-check:check`, `mise-check:verify`, `mise-check:update` (every pin, mise-check's
@@ -109,7 +115,7 @@ repos, each on its own mise only (`MISE_CEILING_PATHS`), on [mise-check's `walk`
 | [cmd/mise-seo/](cmd/mise-seo/) | the command: a file per command |
 | [templates/](templates/) | the template; [templates.go](templates/templates.go) lists both halves |
 | [e2e_walk_test.go](e2e_walk_test.go), [e2e_steps_test.go](e2e_steps_test.go) | the walk and its steps |
-| [e2e_tool_test.go](e2e_tool_test.go) | `TestToolRelease`: only `mise run tool:release` runs it |
+| [e2e_tool_test.go](e2e_tool_test.go) | `TestToolRelease`, mise-check's `release.Run`: only `mise run tool:release` runs it |
 | [mise_test.go](mise_test.go), [gsx_test.go](gsx_test.go) | misecheck on the mise files; the packages without gsx |
 
 ### CI and releases

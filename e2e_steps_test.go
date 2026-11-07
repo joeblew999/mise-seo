@@ -9,10 +9,11 @@ import (
 	"github.com/joeblew999/mise-check/walk"
 )
 
-// steps are the repo's numbered tasks (its .mise/tasks/mise-seo.toml, which is the template's), in their order, each
-// with its check: how the walk runs it and checks it did what it says, as a person would see it. TestSteps fails
-// unless they're exactly the template's numbered tasks, in their order. The tasks that ask Google run as they do for a
-// person with no key yet: each says which it needs and how to get it, and fails.
+// steps are the repo's tasks (its .mise/tasks/mise-seo.toml, which is the template's), in the order a person meets
+// them, as the docs page and mise run seo give it, each with its check: how the walk runs it and checks it did what it
+// says, as a person would see it. TestSteps holds them to the tasks file: each a task, and every task a step or one
+// the walk says why it doesn't run. The tasks that ask Google run as they do for a person with no key yet: each says
+// which it needs and how to get it, and fails.
 var steps = []walk.Step[*walker]{
 	{Task: "seo:init", Check: func(w *walker) {
 		before := w.Snapshot()
@@ -27,6 +28,8 @@ var steps = []walk.Step[*walker]{
 			w.T.Fatalf("seo:check: %s", out)
 		}
 		w.Pass("seo:check: the rules pass")
+	}},
+	{Task: "seo:verify", Check: func(w *walker) {
 		if out := w.MustTask("seo:verify"); !strings.Contains(out, "ok") || !strings.Contains(out, "✓ rules: pass") {
 			w.T.Fatalf("seo:verify: %s", out)
 		}
@@ -65,7 +68,6 @@ var steps = []walk.Step[*walker]{
 	}},
 	{Task: "seo:lighthouse", Check: func(w *walker) { w.needsKey("seo:lighthouse", "PAGESPEED_API_KEY") }},
 	{Task: "seo:badges", Check: func(w *walker) { w.needsKey("seo:badges", "PAGESPEED_API_KEY") }},
-	{Task: "seo:setup", Skip: "it makes a Google Cloud project, its APIs and a service account with a person's own gcloud login, and stores the key in their fnox: the walk checks instead that each task that asks Google says what it needs"},
 	{Task: "seo:sites", Check: func(w *walker) { w.needsKey("seo:sites", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
 	{Task: "seo:submit", Check: func(w *walker) { w.needsKey("seo:submit", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
 	{Task: "seo:status", Check: func(w *walker) { w.needsKey("seo:status", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
