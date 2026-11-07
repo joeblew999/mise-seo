@@ -1,8 +1,5 @@
-# Go test caches and editor files
+# What builds and test runs leave
 *.test
 *.out
-.DS_Store
-# mise's override for one machine: mise-seo's own checkout pins its build there (local)
+# mise's override for one machine, never committed
 .mise/config.local.toml
-# Installed packages
-node_modules/

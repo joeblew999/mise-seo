@@ -1,19 +1,22 @@
-// Command mise-seo keeps a repo whose mise tasks run Go the way mise-seo's packages check it: its tasks written
-// in (init), its rules (check), and every pin it has moved to its newest release in one go (update: mise's tools, its
-// packages, Go and every Go module, majors too). A repo pins it in .mise/config.toml, from its GitHub releases, as
-// mise-cloudflare is pinned. `mise-seo show-help` lists the commands.
+// Command mise-seo is how a Go web app's repo answers search engines, from its seo.toml (found up from the working
+// directory): the live site audited as Googlebot reads it, Lighthouse on Google's servers, the README's badges, and
+// Google Search Console. A repo gets it as it gets mise-intl: a binary on mise-seo's GitHub releases (goreleaser,
+// .goreleaser.yaml), which mise installs at the release the repo's .mise/config.toml pins (github:joeblew999/mise-seo).
+// The app imports mise-seo's packages from the same release's Go module. Each command is a task too, numbered in the
+// order a repo meets them (.mise/tasks/mise-seo.toml, which mise-seo init writes): mise run seo:<nn>-<command> runs
+// mise-seo <command>.
 //
-// Each command is a file of its own, holding the function named for it (update.go holds update), so misecheck holds
-// every task of the template to the Go it runs, both ways.
+// Each command is a file of its own, holding the method named for it (audit.go holds audit), so misecheck holds every
+// task of the template to the Go it runs, both ways. mise-seo show-help lists them.
+//
+// Exit codes are the contract between tasks: 0 ok, 1 problems (or no access), 2 usage. --json prints one JSON document
+// on stdout instead of text (the same data, for agents, CI and jq) and never opens a browser.
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"runtime/debug"
-	"slices"
 	"strings"
 )
 
@@ -23,32 +26,41 @@ import (
 // both) to them, word for word.
 type command struct{ task, does, when string }
 
-// commands are every command, as the template's tasks file has them, in its order.
+// commands are every command, as the template's tasks file has them, in its order: the numbered steps, in the order a
+// repo meets them, then the rest.
 var commands = []command{
-	{"mise-seo", "what's done for the repo, and what to run next", "first, and whenever you're unsure"},
-	{"mise-seo:init", "writes mise-seo's files again: its tasks, the workflow, the skill, the docs, the hook", "after upgrading mise-seo"},
-	{"mise-seo:check", "the repo's rules: its mise files by misecheck, its skills against their tasks, mise-seo's files current, its two pins (the binary in mise, the packages in go.mod) at one release", "after any change to a mise file or a skill; when it fails, fix the side it names"},
-	{"mise-seo:show", "the same as mise run mise-seo", "to see where the repo is"},
-	{"mise-seo:verify", "what GitHub runs: each pin consistent with what pins it, the repo's setup and test, then check", "before every push"},
-	{"mise-seo:update", "every pin at its newest: the three below, in order, then mise-seo's two pins at one release", "when the person asks to upgrade everything"},
-	{"mise-seo:update-mise", "the tools in the repo's mise files", "to upgrade the mise tools only"},
-	{"mise-seo:update-packages", "package.json and its lockfile, through aube", "to upgrade the Node packages only"},
-	{"mise-seo:update-go", "every go.mod's toolchain line and modules, majors too, their import paths rewritten", "to upgrade Go only"},
-	{"mise-seo:show-users", "which of the owner's repos use it, at what version, the behind ones marked", "to see which of the owner's repos use this one, and which are behind"},
-	{"mise-seo:template", "the template's little app, its go.mod and packages; it never writes over a file", "only in a repo with no Go program yet"},
-	{"mise-seo:new-tool", "a new mise tool repo in an empty folder: mise-seo at its release, copied and renamed for the module, its packages imported instead", "to start a new mise tool repo, with its binary, template, walks and CI"},
-	{"mise-seo:show-version", "its version", "to say which mise-seo this is"},
-	{"mise-seo:show-help", "every command and its flags", "to list every command"},
+	{"seo", "what's done for the repo, and what to run next", "first, and whenever you're unsure"},
+	{"seo:03-init", "mise-seo's files (its tasks, the workflow, the skill, the docs, the hook), seo.toml when the repo has none or no site (--site, the live site), and go.mod requiring mise-seo's packages at this release", "once, then after upgrading mise-seo"},
+	{"seo:04-check", "the repo's rules: mise-seo's files as this version writes them, its pin, seo.toml with a site, the packages in go.mod at the binary's release", "after a change to seo.toml or mise-seo's files; when it fails, run what it names"},
+	{"seo:05-show", "the same as mise run seo", "to see where the repo is"},
+	{"seo:06-audit", "the site as Googlebot reads it, robots.txt, the sitemap and every page in it: whatever would keep a page out of the index or look wrong in a result (--site: another server, a local build or a preview)", "after every production deploy, and on a local build before it"},
+	{"seo:07-lighthouse", "Lighthouse on the live site on Google's servers: performance, accessibility, best practices and SEO out of 100 for every page or the one named, what fails and on which elements, real users' Core Web Vitals; fails under seo.toml's min (--desktop: the desktop page)", "after a production deploy, and to fix a score"},
+	{"seo:08-badges", "Lighthouse on every page and the audit, then the README's badges and its scores table", "after a production release, then commit them"},
+	{"seo:09-setup", "the Google Cloud project, its Search Console and PageSpeed Insights APIs, and a service account key in fnox (asks first; needs gcloud auth login)", "once per person, before the tasks that ask Google"},
+	{"seo:10-sites", "the Search Console properties the service account can use; fails without Full access to seo.toml's", "after setup, and after adding the account to a property"},
+	{"seo:11-submit", "the sitemap submitted to Search Console, after a passing audit (asks first)", "once the site is live, and after its pages change"},
+	{"seo:12-status", "the sitemap's status in Search Console, and Google's index status of every URL in it", "to see what Google has of the site"},
+	{"seo:13-todo", "Google's verdict for every sitemap URL: indexed, waiting, duplicate or a problem; fails on a problem (--open: each problem's Search Console page)", "days after submitting, and whenever Search Console reports a problem"},
+	{"seo:14-inspect", "one URL, the home page or the one named: Google's verdict, last crawl and canonical, and its Search Console page (--open opens it)", "to look into one page"},
+	{"seo:verify", "what the repo's GitHub workflow runs: its setup and test tasks, then check", "before every push"},
+	{"seo:template", "the template's little app, its pages answering search engines as the audit wants; it never writes over a file", "only in a repo with no Go program yet"},
+	{"seo:show-version", "its version", "to say which mise-seo this is"},
+	{"seo:show-help", "every command and its flags", "to list every command"},
 }
 
 // help is show-help's text: every command, from commands, and the flags.
 var help = func() string {
 	var b strings.Builder
-	b.WriteString("This repo's pins and mise tasks, with mise-seo. Each command is a task, mise run mise-seo:<command>:\n\n")
+	b.WriteString("mise-seo: how the app answers search engines, from its seo.toml. Each command is a task, mise run seo:<nn>-<command>:\n\n")
 	for _, c := range commands {
-		fmt.Fprintf(&b, "  %-38s %s\n", "mise run "+c.task, c.does)
+		fmt.Fprintf(&b, "  %-32s %s\n", "mise run "+c.task, c.does)
 	}
-	b.WriteString("\nnew-tool takes the new repo's module, github.com/<owner>/<name>, and --from <checkout>.\nThe updates take --no-major: no major moves. --json, one JSON document on stdout instead of text: mise-seo,\nshow, check, the updates, show-users, show-version. Start with mise run mise-seo: it says what to run next.\n")
+	b.WriteString(`
+--json, one JSON document on stdout instead of text: mise-seo, show, check, audit, lighthouse, sites, status, todo,
+inspect. --site <url>: init's live site for seo.toml, or another server for audit. lighthouse and inspect take a page,
+a path (/de/) or a full URL. The tasks that ask Google read GOOGLE_SEARCH_CONSOLE_KEY and PAGESPEED_API_KEY from the
+environment, else from fnox. Start with mise run seo: it says what to run next.
+`)
 	return b.String()
 }()
 
@@ -58,68 +70,40 @@ func main() {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		command, args = args[0], args[1:]
 	}
-	flags := flag.NewFlagSet("mise-seo "+command, flag.ExitOnError)
-	jsonOut := flags.Bool("json", false, "print one JSON document on stdout instead of text")
-	noMajor := flags.Bool("no-major", false, "the updates: no major moves (packages within their ranges, Go modules within their major)")
-	from := flags.String("from", "", "new-tool: copy this checkout of mise-seo instead of its release")
-	flags.Usage = func() { fmt.Fprint(os.Stderr, help) }
-	flags.Parse(args)
-	module := ""
-	if command == "new-tool" && flags.NArg() == 1 {
-		module = flags.Arg(0)
-	} else if flags.NArg() > 0 || command == "new-tool" {
-		flags.Usage()
-		os.Exit(2)
-	}
-	// A flag a command doesn't take is refused, not ignored: the tasks pass only their own, and so must anyone else.
-	takes := map[string][]string{"": {"json"}, "show": {"json"}, "check": {"json"}, "show-users": {"json"}, "show-version": {"json"},
-		"update": {"json", "no-major"}, "update-mise": {"json", "no-major"}, "update-packages": {"json", "no-major"}, "update-go": {"json", "no-major"}, "new-tool": {"from"}}
-	flags.Visit(func(f *flag.Flag) {
-		if !slices.Contains(takes[command], f.Name) {
-			fmt.Fprintf(os.Stderr, "mise-seo %s takes no --%s (mise-seo show-help: every command and its flags)\n", command, f.Name)
-			os.Exit(2)
-		}
-	})
 	dir, err := os.Getwd()
 	must(err)
 	r := repo{dir: dir}
 	switch command {
 	case "", "show":
-		r.show(*jsonOut)
+		r.show(args)
 	case "init":
-		r.initRepo()
-		trustConfig(dir, ".mise/config.toml")
-		sayNewest()
+		r.initRepo(args)
 	case "check":
-		r.check(*jsonOut)
-	case "update", "update-mise", "update-packages", "update-go":
-		if inCI() {
-			fail(fmt.Errorf("in CI %s doesn't run: CI only checks the repo, and %s changes its pins; run mise run mise-seo:%s on your machine, then mise run mise-seo:verify", command, command, command))
-		}
-		o := updates{json: *jsonOut, noMajor: *noMajor}
-		if o.json {
-			out = os.Stderr
-		}
-		switch command {
-		case "update":
-			r.update(o)
-		case "update-mise":
-			r.updateMise(o)
-		case "update-packages":
-			r.updatePackages(o)
-		case "update-go":
-			r.updateGo(o)
-		}
-	case "show-users":
-		r.showUsers(*jsonOut)
+		r.check(args)
+	case "audit":
+		r.audit(args)
+	case "lighthouse":
+		r.lighthouse(args)
+	case "badges":
+		r.badges(args)
+	case "setup":
+		r.setup(args)
+	case "sites":
+		r.sites(args)
+	case "submit":
+		r.submit(args)
+	case "status":
+		r.status(args)
+	case "todo":
+		r.todo(args)
+	case "inspect":
+		r.inspect(args)
 	case "verify":
-		r.verify()
+		r.verify(args)
 	case "template":
-		r.template()
-	case "new-tool":
-		r.newTool(module, *from)
+		r.template(args)
 	case "show-version":
-		showVersion(*jsonOut)
+		showVersion(args)
 	case "show-help":
 		showHelp()
 	default:
@@ -131,38 +115,27 @@ func main() {
 // repo is the repo in the folder mise-seo runs in.
 type repo struct{ dir string }
 
-// inCI reports whether this runs in CI (CI=true, as GitHub Actions and every other CI set it).
-func inCI() bool {
-	return os.Getenv("CI") != "" && os.Getenv("CI") != "false" && os.Getenv("CI") != "0"
+// flags is a command's flag set: one it doesn't take is refused (exit 2), with every command's.
+func flags(name string) *flag.FlagSet {
+	f := flag.NewFlagSet("mise-seo "+name, flag.ExitOnError)
+	f.Usage = func() { fmt.Fprint(os.Stderr, help) }
+	return f
 }
 
-func emit(v any) {
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	enc.SetEscapeHTML(false)
-	must(enc.Encode(v))
-}
-
-func must(err error) {
-	if err != nil {
-		fail(err)
+// parse parses a command's flags before or after its arguments (mise-seo inspect /de/ --json is mise-seo inspect
+// --json /de/), and returns the arguments: more than most is a usage error.
+func parse(f *flag.FlagSet, args []string, most int) []string {
+	var out []string
+	for {
+		f.Parse(args)
+		if f.NArg() == 0 {
+			break
+		}
+		out, args = append(out, f.Arg(0)), f.Args()[1:]
 	}
-}
-
-func fail(err error) {
-	fmt.Fprintln(os.Stderr, "mise-seo:", err)
-	os.Exit(1)
-}
-
-// version is set by the release build (goreleaser's -X main.version); otherwise Go's module version, or "(devel)".
-var version = ""
-
-func buildVersion() string {
-	if version != "" {
-		return strings.TrimPrefix(version, "v")
+	if len(out) > most {
+		f.Usage()
+		os.Exit(2)
 	}
-	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" {
-		return strings.TrimPrefix(bi.Main.Version, "v")
-	}
-	return "(devel)"
+	return out
 }

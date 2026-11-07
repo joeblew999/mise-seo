@@ -1,6 +1,4 @@
-// The repo's mise files, checked by misecheck (github.com/joeblew999/mise-seo), as any tool repo checks its own:
-// the root's, and the template's tasks the strict way. A tool repo new-tool makes keeps this file.
-package misecheck_test
+package e2e
 
 import (
 	"testing"
@@ -8,23 +6,28 @@ import (
 	misecheck "github.com/joeblew999/mise-check"
 )
 
-// TestRootMise checks this repo's own mise file: mise run root:check-mise runs it.
+// TestRootMise is misecheck (github.com/joeblew999/mise-check) on this repo's own mise.toml, its mise side: the root
+// runs Go, it isn't a binary's tasks (mise run root:check-mise).
 func TestRootMise(t *testing.T) { misecheck.Check(t, misecheck.Config{MiseFile: "mise.toml"}) }
 
-// TestTemplateMise checks the template's tasks file the strict way, against the binary's Go (cmd/), the walk that
-// runs them (this folder's tests), the skill and the docs, and the other files init writes that name its tasks: mise
-// run template:check-mise runs it.
+// TestTemplateMise is misecheck on the template's tasks, both ways: against mise-seo's Go, against the walk that runs
+// them, against the template's skill and docs page, which name every task and flag, and against the other files init
+// and template write that name its tasks (mise run template:check-mise).
 func TestTemplateMise(t *testing.T) {
 	misecheck.Check(t, misecheck.Config{
 		MiseFile:  "templates/.mise/tasks/mise-seo.toml",
 		GoCmd:     "cmd",
 		GoLayout:  "file",
 		GoCallers: ".",
-		Skills:    []string{"templates/.claude/skills/mise-seo/SKILL.md", "templates/docs/mise-seo/README.md"},
+		Skills:    []string{"templates/.claude/skills/seo/SKILL.md", "templates/docs/seo/README.md"},
 		Names: []string{
 			"templates/.mise/config.toml",
 			"templates/.claude/hooks/mise-seo-session-start.sh",
-			"templates/.github/workflows/mise-seo.yml",
+			"templates/.github/workflows/seo.yml",
+			"templates/mise.toml",
+			"templates/seo.toml",
+			"templates/README.md",
+			"templates/app/main.go",
 		},
 	})
 }

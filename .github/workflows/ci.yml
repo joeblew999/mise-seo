@@ -1,6 +1,6 @@
 # mise-seo's CI: its own tests, itself on its own mise file, and its template (misecheck on its tasks, then the walk
-# on the template where it is and on a new repo made from nothing, and update moving old pins of every kind), on Linux, macOS and Windows side by side
-# (the point of it is that tasks run the same everywhere). Shell steps only, as mise-cloudflare's: no JavaScript actions.
+# on the template where it is and on a new repo made from nothing), on Linux, macOS and Windows side by side (the
+# point of it is that tasks run the same everywhere). Shell steps only, as mise-intl's: no JavaScript actions.
 name: ci
 
 # Once a change: a push to main, or a pull request (again for each push to its branch). Never a branch's push and its

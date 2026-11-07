@@ -2,65 +2,69 @@ package main
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/joeblew999/mise-seo/seo/config"
 )
 
 // report is mise-seo show --json: where the repo is, and what to run next.
 type report struct {
-	Version  string   `json:"version"`  // this build of mise-seo
+	Version  string   `json:"version"`  // this mise-seo: the release .mise/config.toml pins
+	Site     string   `json:"site"`     // seo.toml's site, "" for none
 	App      bool     `json:"app"`      // the repo has Go of its own (a go.mod, or a Go program), or the template's app
 	Problems []string `json:"problems"` // check's
 	Next     string   `json:"next"`     // the task to run next
 }
 
-// show is mise-seo show, and mise-seo with no command (mise run mise-seo): the steps, which are done for
-// this repo, and the next one.
-func (r repo) show(jsonOut bool) {
-	s := r.status()
-	if jsonOut {
+// show is mise-seo show (seo:05-show), and mise-seo with no command (mise run seo): the steps, which are done for this
+// repo, and the next one. It asks no server anything, so it's quick.
+func (r repo) show(args []string) {
+	f := flags("show")
+	jsonOut := f.Bool("json", false, "one JSON document on stdout")
+	parse(f, args, 0)
+	s := r.where()
+	if *jsonOut {
 		emit(s)
 		return
 	}
 	mark := map[bool]string{true: "✓", false: "·"}
-	fmt.Printf("mise-seo %s\n", s.Version)
-	fmt.Printf("%s init      mise-seo's files, as this version writes them\n", mark[!anyHas(s.Problems, initTask)])
-	fmt.Printf("%s check     the repo's rules\n", mark[len(s.Problems) == 0])
-	fmt.Printf("%s app       Go of the repo's own, a go.mod (or the template's app, in a repo with none: mise run mise-seo:template)\n", mark[s.App])
-	fmt.Println("· update    every pin at its newest release, whenever you want them moved")
+	fmt.Printf("mise-seo %s; site: %s\n", s.Version, or(s.Site, "none"))
+	fmt.Printf("%s 03-init    mise-seo's files, as this version writes them, and seo.toml\n", mark[!s.initDue()])
+	fmt.Printf("%s app        Go of the repo's own (or the template's app: mise run seo:template)\n", mark[s.App])
+	fmt.Printf("%s site       seo.toml's live site, which every task works on\n", mark[s.Site != ""])
+	fmt.Printf("%s 04-check   the repo's rules\n", mark[len(s.Problems) == 0])
+	fmt.Println("· 06-audit   the site as Googlebot reads it, after every deploy; then Lighthouse and Google (mise run seo:show-help)")
 	for _, p := range s.Problems {
-		fmt.Println("  FAIL " + p)
+		fmt.Println("  ✗ " + p)
 	}
 	fmt.Println("next: " + s.Next)
 }
 
-// status is where the repo is, which show says: the problems, whether it has Go of its own, and the step to take next.
-// A repo with a go.mod has code of its own, a tool's or a library's, even with no program: the template, which would
-// add its little app and packages beside it, isn't next.
-func (r repo) status() report {
-	s := report{Version: buildVersion(), Problems: r.rules(), App: r.hasApp() || r.exists("go.mod")}
+// where is where the repo is, which show says: the problems, whether it has Go of its own and a site, and the step to
+// take next. A repo with a go.mod has code of its own: the template, which would add its little app beside it, isn't
+// next.
+func (r repo) where() report {
+	s := report{Version: buildVersion(), Problems: append([]string{}, r.rules()...), App: r.hasApp() || r.exists("go.mod")}
+	if c, err := config.Find(r.dir); err == nil {
+		s.Site = c.Site
+	}
+	initDue := len(r.initRules()) > 0
 	switch {
-	case anyHas(s.Problems, initTask):
-		s.Next = "mise run mise-seo:init"
-	case len(s.Problems) > 0:
-		s.Next = "mise run mise-seo:check"
+	case initDue:
+		s.Next = initTask
 	case !s.App:
-		s.Next = "mise run mise-seo:template"
+		s.Next = "mise run seo:template"
+	case s.Site == "":
+		s.Next = initTask + " --site https://your.site"
+	case len(s.Problems) > 0:
+		s.Next = "mise run seo:04-check"
 	default:
-		s.Next = "mise run mise-seo:update"
+		s.Next = "mise run seo:06-audit"
 	}
 	return s
 }
 
-// initTask is the task that writes init's files again, which every problem with them names: show's init step is done
-// when no problem names it.
-const initTask = "mise run mise-seo:init"
+// initDue reports whether init's step is next, or before it.
+func (s report) initDue() bool { return s.Next == initTask }
 
-// anyHas reports whether any of problems says s.
-func anyHas(problems []string, s string) bool {
-	for _, p := range problems {
-		if strings.Contains(p, s) {
-			return true
-		}
-	}
-	return false
-}
+// initTask is the task that writes init's files again.
+const initTask = "mise run seo:03-init"

@@ -1,74 +1,64 @@
-// mise-seo's end-to-end test, at the top of the repo as mise-cloudflare's is (package misecheck_test, as the
-// package misecheck is the folder's own), on its own walk package (github.com/joeblew999/mise-seo/walk), as
-// mise-cloudflare's is: the tasks a repo meets in turn, through the repo's own mise file, on the template where it is
-// (mise run template:e2e) and on a new repo made from nothing as docs/mise-seo/README.md says (mise run
-// new-repo:e2e); and update on the template and a new repo given old pins of every kind, each moved (mise run
-// template:e2e-update, new-repo:e2e-update). Each runs only when its task names it, so go test ./... never walks.
-package misecheck_test
+// Package e2e is this repo's end-to-end test: a walk of a repo's numbered tasks, through the repo's own mise file, on
+// mise-check's walk (github.com/joeblew999/mise-check/walk), which runs the steps in their order and does everything
+// that isn't mise-seo's. It sits at the top of this repo, beside the root mise.toml whose tasks run it:
+//
+//   - e2e_walk_test.go, this file: the walk tests the root's tasks run by name (TestWalkTemplate, TestWalkNewRepo),
+//     TestSteps, and what's mise-seo's in making a repo and running its app.
+//   - e2e_steps_test.go: the steps, the repo's numbered tasks in their order, each with its check.
+//
+// e2e_tool_test.go is the release (mise run tool:release), mise_test.go checks that the mise files and the Go line
+// up, both ways, and gsx_test.go that mise-seo's packages but gsxseo need no gsx.
+package e2e
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
+	"maps"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/joeblew999/mise-check/walk"
 )
 
-// miseCheckWalk is the walk: the tasks a repo meets in turn (templates/.mise/tasks/mise-seo.toml), init, check and
-// show, each checked by what a person would see it do.
-var miseCheckWalk = walk.Walk[*walker]{Steps: steps, New: newRepo, Prepare: withGo, Of: func(r walk.Repo) *walker { return &walker{r} }}
+// seoWalk is the walk: the template's numbered tasks (templates/.mise/tasks/mise-seo.toml), in their order, each
+// checked. Which repo is the test's name: the template where it is, or a new repo made as docs/seo/README.md says (at
+// the release -version names or this checkout's build).
+var seoWalk = walk.Walk[*walker]{Steps: steps, New: newRepo, Prepare: withGo, Of: walkOf}
 
-func TestWalkTemplate(t *testing.T) { miseCheckWalk.Template(t, "templates") }
-func TestWalkNewRepo(t *testing.T)  { miseCheckWalk.NewRepo(t) }
+// TestWalkTemplate walks the template, templates/, where it is (mise run template:e2e). Each walk runs only when its
+// task names it, so go test ./... never walks.
+func TestWalkTemplate(t *testing.T) { seoWalk.Template(t, "templates") }
 
-// walker is mise-seo's walk of a repo: what each step's Check is given.
+// TestWalkNewRepo walks a new repo made as docs/seo/README.md says (mise run new-repo:e2e).
+func TestWalkNewRepo(t *testing.T) { seoWalk.NewRepo(t) }
+
+// TestSteps checks that the steps are the template's numbered tasks, in their order, so the walk is that file's walk.
+func TestSteps(t *testing.T) { walk.CheckSteps(t, "templates/.mise/tasks/mise-seo.toml", steps) }
+
+// walker is the steps run on a repo in their order: what each step's Check is given.
 type walker struct{ walk.Repo }
 
-// steps are the tasks a repo meets in turn, each checked; misecheck (GoCallers) checks each name is a task.
-var steps = []walk.Step[*walker]{
-	{Task: "mise-seo:init", Check: func(w *walker) {
-		before := w.Snapshot("node_modules")
-		w.MustTask("mise-seo:init")
-		if changed := walk.Diff(before, w.Snapshot("node_modules")); len(changed) > 0 {
-			w.T.Fatalf("mise-seo:init changed %s: the repo isn't what init writes", strings.Join(changed, ", "))
-		}
-		w.Pass("mise-seo:init changed nothing: the repo is what init writes")
-	}},
-	{Task: "mise-seo:check", Check: func(w *walker) {
-		if out := w.MustTask("mise-seo:check"); !strings.Contains(out, "rules: pass") {
-			w.T.Fatalf("mise-seo:check: %s", out)
-		}
-		w.Pass("mise-seo:check: the rules pass")
-		w.MustTask("mise-seo:verify")
-		w.Pass("mise-seo:verify: what the repo's GitHub workflow runs passes (its setup and test tasks, then check)")
-	}},
-	{Task: "mise-seo:show", Check: func(w *walker) {
-		var s struct {
-			App  bool
-			Next string
-		}
-		w.TaskJSON(&s, "mise-seo:show", "--json")
-		if !s.App || s.Next != "mise run mise-seo:update" {
-			w.T.Fatalf("mise-seo:show --json: %+v", s)
-		}
-		w.Pass("mise-seo:show says next: %s", s.Next)
-		if out := w.MustTask("app:start"); !strings.Contains(out, "hello, app") {
-			w.T.Fatalf("the app (mise run app:start): %s", out)
-		}
-		w.Pass("the app runs (mise run app:start): hello, app")
-	}},
+// walkOf is the walk of a repo the walk has set up (mise install, then its setup task): first, what it runs.
+func walkOf(r walk.Repo) *walker {
+	w := &walker{r}
+	w.Pass("%s runs %s", w.Name, w.versions())
+	return w
 }
 
 // withGo gives the template, where it is, the Go of the module it's a folder of. It has no go.mod of its own (one
 // would make it a module apart from mise-seo's, whose embed it is), and the walk cuts mise off from the repo around
-// it, so its own mise files have no Go to give its tasks; the Go this test runs with is that module's (its toolchain
-// line). A new repo has a go.mod of its own, whose Go mise installs, so it needs nothing.
+// it, so its own mise files have no Go to give its tasks; the Go this test runs with is that module's. A new repo has
+// a go.mod of its own, whose Go mise installs.
 func withGo(r walk.Repo) walk.Repo {
 	if _, err := os.Stat(filepath.Join(r.Dir, "go.mod")); err == nil {
 		return r
@@ -77,201 +67,92 @@ func withGo(r walk.Repo) walk.Repo {
 	return r
 }
 
-// newRepo is a new repo, made as docs/mise-seo/README.md says a person makes one: an empty folder with its own git,
-// mise-seo init at the release version names (mise exec github:joeblew999/mise-seo@<version> -- mise-seo init,
-// which pins that release), or at this checkout's build without one (local, which mise run tool:install links), then
-// mise-seo:template, which gives it the template's app, its packages and its go.mod.
+// newApp is a new repo's folder, which seo:template names its app's module for: its walk never touches the template's.
+const newApp = "seo-new"
+
+// newRepo is a new repo, made as docs/seo/README.md says a person makes one: an empty folder with its own git,
+// mise-seo init at the release version names (mise exec github:joeblew999/mise-seo@<version> -- mise-seo init, which
+// pins that release), or at this checkout's build without one (local, which mise run tool:install links), then
+// seo:template, which writes the template's app, its module named for the folder. With this checkout's build, the
+// go.mod is there first, using this checkout's packages (go mod init, then a replace), as a person trying a change
+// has it.
 func newRepo(r walk.Repo, version string) walk.Repo {
-	at := "local"
-	if version != "" {
-		at = strings.TrimPrefix(version, "v")
-	}
-	if at == "local" {
+	at := strings.TrimPrefix(version, "v")
+	if at == "" {
+		at = "local"
 		r.NeedLocal("github:joeblew999/mise-seo")
 	}
-	n := r.New("mise-seo-new")
+	n := r.New(newApp)
+	if at == "local" {
+		n.Must("go", "mod", "init", newApp)
+		n.Must("go", "mod", "edit", "-require=github.com/joeblew999/mise-seo@v0.0.0", "-replace=github.com/joeblew999/mise-seo="+r.Top)
+	}
 	n.Must("mise", "exec", "github:joeblew999/mise-seo@"+at, "--", "mise-seo", "init")
-	n.MustTask("mise-seo:template")
-	n.Pass("%s: an empty folder, its own git, mise-seo init at %s, then mise-seo:template", n.Name, at)
+	want := `"github:joeblew999/mise-seo" = "` + at + `"`
+	if b, _ := os.ReadFile(filepath.Join(n.Dir, ".mise", "config.toml")); !bytes.Contains(b, []byte(want)) {
+		r.T.Fatalf("mise-seo %s's init didn't pin itself in .mise/config.toml (%s):\n%s", at, want, b)
+	}
+	n.MustTask("seo:template")
+	if b, _ := os.ReadFile(filepath.Join(n.Dir, "go.mod")); !bytes.Contains(b, []byte("module "+newApp)) {
+		r.T.Fatalf("seo:template didn't name the app's module for its folder, %s:\n%s", newApp, b)
+	}
+	n.Pass("%s: an empty folder, its own git, mise-seo init at %s, then seo:template (the template's app, its module named for the folder)", n.Name, at)
 	return n
 }
 
-// TestWalkNewTool is a new mise tool repo, made as the docs page says: an empty folder with its own git, then mise-seo
-// new-tool there, at this checkout's build (copying this checkout, --from) or the release -version names (copying that
-// release from Go's module proxy). Then its own CI, mise run root:verify, must pass: its misecheck on its tasks, skill
-// and docs, its tool tests, and its template and new-repo walks, all on its renamed binary (mise run new-tool:e2e).
-func TestWalkNewTool(t *testing.T) {
-	walk.OnlyByName(t)
-	top := walk.At(t, ".")
-	n := top.New("mise-new-tool")
-	at, from := "local", []string{"--from", top.Dir}
-	if *walk.Version != "" {
-		at, from = strings.TrimPrefix(*walk.Version, "v"), nil
-	} else {
-		top.NeedLocal("github:joeblew999/mise-seo")
+// versions is what the repo runs, each as its own tool reports it: its mise tools (mise ls --local --json) and the
+// build of mise-seo (seo:show-version).
+func (w *walker) versions() string {
+	w.T.Helper()
+	var tools map[string][]struct {
+		Version string
+		Active  bool
 	}
-	n.Must("mise", append(append([]string{"exec", "github:joeblew999/mise-seo@" + at, "--", "mise-seo", "new-tool"}, from...), "github.com/joeblew999/mise-new-tool")...)
-	n.Pass("%s: an empty folder, its own git, mise-seo new-tool at %s", n.Name, at)
-	for _, gone := range []string{"misecheck.go", "walk", filepath.Join("cmd", "mise-seo")} {
-		if _, err := os.Stat(filepath.Join(n.Dir, gone)); err == nil {
-			t.Fatalf("%s: new-tool left %s", n.Name, gone)
-		}
+	if err := json.Unmarshal(w.Stdout("mise", "ls", "--local", "--json"), &tools); err != nil || len(tools) == 0 {
+		w.T.Fatalf("the repo's mise tools, mise ls --local --json: %v (%d read)", err, len(tools))
 	}
-	n.Must("mise", "run", "root:verify")
-	n.Pass("%s: its own root:verify passes, what its CI runs", n.Name)
-}
-
-// TestUpdateTemplate is the update commands (updateOld) on the template, templates/, as it is: on a copy of it, so the
-// template itself never changes (mise run template:e2e-update).
-func TestUpdateTemplate(t *testing.T) {
-	walk.OnlyByName(t)
-	// A copy of the template as it is, in a folder of its own with its own git, never the template itself: the updates
-	// change its files, and a walk stopped half way would leave them changed. Its installed packages aren't copied;
-	// its .mise/config.local.toml is, which runs this checkout's build (tool:install).
-	at := walk.At(t, "templates")
-	n := at.New("templates-copy")
-	if err := walk.CopyRepo(at.Dir, n.Dir, "node_modules"); err != nil {
-		t.Fatal(err)
-	}
-	n.Name = "the template, as it is (a copy)"
-	// The go.mod mise-seo:template writes into a repo: the template has none of its own, as one would make it a
-	// module apart from mise-seo's, whose embed it is.
-	must(t, os.WriteFile(filepath.Join(n.Dir, "go.mod"), []byte("module mise-seo-template\n\ngo "+strings.TrimPrefix(runtime.Version(), "go")+"\n"), 0o644))
-	n.Pass("%s: templates copied, with the go.mod mise-seo:template writes; the template itself is never changed", n.Name)
-	updateOld(t, n)
-}
-
-// TestUpdateNewRepo is the update commands (updateOld) on a new repo, made as TestWalkNewRepo makes it (mise run
-// new-repo:e2e-update).
-func TestUpdateNewRepo(t *testing.T) {
-	walk.OnlyByName(t)
-	updateOld(t, newRepo(walk.At(t, "."), *walk.Version))
-}
-
-// updateOld gives the repo old pins of every kind: a mise tool (node, in mise.toml), a package (wrangler, in
-// package.json), and Go modules, one a major behind (go-chi/chi v1, its import in the app) and one a minor behind
-// (google/uuid). mise-seo:update-mise, update-packages and update-go must each move its own kind and nothing else,
-// chi to /v5 with its import rewritten; then mise-seo:update has nothing left to move, and mise-seo:verify passes.
-func updateOld(t *testing.T, n walk.Repo) {
-	t.Helper()
-	n.SetUp()
-
-	n.Heading("Old pins of every kind")
-	// Whatever the template pins now (template:update moves it), made old.
-	replace(t, filepath.Join(n.Dir, "mise.toml"), `node = "[^"]*"`, `node = "24.11.0"`)
-	replace(t, filepath.Join(n.Dir, "package.json"), `"wrangler": "[^"]*"`, `"wrangler": "4.100.0"`)
-	must(t, os.WriteFile(filepath.Join(n.Dir, "app", "deps.go"), []byte(`package main
-
-import (
-	"github.com/go-chi/chi"
-	"github.com/google/uuid"
-)
-
-// router and id are the app's use of two modules: update moves both.
-var router, id = chi.NewRouter(), uuid.NewString
-`), 0o644))
-	n.Must("mise", "exec", "--", "go", "get", "github.com/go-chi/chi@v1.5.4", "github.com/google/uuid@v1.3.0")
-	n.Must("mise", "exec", "--", "go", "mod", "tidy")
-	n.Pass("node 24.11.0 (mise.toml), wrangler 4.100.0 (package.json), go-chi/chi v1.5.4 and google/uuid v1.3.0 (go.mod)")
-
-	// Each of them refuses in CI, which only checks: here it's the walk's own repo, made to be updated.
-	update := func(task string, args ...string) string {
-		t.Helper()
-		out, err := n.Task(n.Env("CI="), "", task, args...)
-		if err != nil {
-			t.Fatalf("%s: %v\n%s", task, err, out)
-		}
-		return out
-	}
-	moved := func(task, out string, want, not []string) {
-		t.Helper()
-		for _, w := range want {
-			if !strings.Contains(out, w) {
-				t.Errorf("%s didn't say %q", task, w)
+	var v []string
+	for _, name := range slices.Sorted(maps.Keys(tools)) {
+		for _, t := range tools[name] {
+			if t.Active {
+				v = append(v, name+" "+t.Version)
 			}
 		}
-		for _, w := range not {
-			if strings.Contains(out, w) {
-				t.Errorf("%s moved what isn't its own: it said %q", task, w)
-			}
-		}
-		if t.Failed() {
-			t.FailNow()
-		}
 	}
-	gomod := []string{"github.com/google/uuid v1.3.0 → ", "github.com/go-chi/chi v1.5.4 → none", "github.com/go-chi/chi/v5 none → v5."}
+	build := strings.TrimSpace(string(w.Stdout("mise", "run", "seo:show-version")))
+	if build == "" {
+		w.T.Fatal("seo:show-version said no version")
+	}
+	return fmt.Sprintf("%s (mise); mise-seo's build %s", strings.Join(v, ", "), build)
+}
 
-	n.Heading("mise-seo:update-mise: the mise tools, and nothing else")
-	moved("mise-seo:update-mise", update("mise-seo:update-mise"), []string{"node 24.11.0 → "}, append([]string{"wrangler 4.100.0 → "}, gomod...))
-	if strings.Contains(read(t, filepath.Join(n.Dir, "mise.toml")), `node = "24.11.0"`) {
-		t.Fatal("mise.toml still pins node 24.11.0")
-	}
-	n.Pass("node moved in mise.toml; wrangler and the Go modules stayed")
-
-	n.Heading("mise-seo:update-packages: the Node packages, and nothing else")
-	moved("mise-seo:update-packages", update("mise-seo:update-packages"), []string{"wrangler 4.100.0 → "}, gomod)
-	if strings.Contains(read(t, filepath.Join(n.Dir, "package.json")), `"4.100.0"`) {
-		t.Fatal("package.json still pins wrangler 4.100.0")
-	}
-	n.Pass("wrangler moved in package.json and its lockfile; the Go modules stayed")
-
-	n.Heading("mise-seo:update-go: Go and its modules, majors too")
-	moved("mise-seo:update-go", update("mise-seo:update-go"), gomod, nil)
-	gm := read(t, filepath.Join(n.Dir, "go.mod"))
-	deps := read(t, filepath.Join(n.Dir, "app", "deps.go"))
-	switch {
-	case !regexp.MustCompile(`github.com/go-chi/chi/v5 v5\.`).MatchString(gm):
-		t.Fatalf("go.mod has no go-chi/chi/v5:\n%s", gm)
-	case strings.Contains(gm, "github.com/google/uuid v1.3.0"):
-		t.Fatalf("go.mod still has google/uuid v1.3.0:\n%s", gm)
-	case !strings.Contains(deps, `"github.com/go-chi/chi/v5"`):
-		t.Fatalf("app/deps.go's import of chi wasn't rewritten to /v5:\n%s", deps)
-	}
-	n.Pass("google/uuid moved, and go-chi/chi to /v5 with app/deps.go's import rewritten")
-
-	n.Heading("mise-seo:update --json: all three, and nothing is left to move")
-	var all struct {
-		Moved int
-		Pins  []struct{ File, Name, Before, After string }
-	}
-	// stdout alone, the one JSON document; the tools' own output is on stderr. CI= as above.
-	cmd := exec.Command("mise", "run", "mise-seo:update", "--json")
-	cmd.Dir, cmd.Env, cmd.Stderr = n.Dir, n.Env("CI=", "MISE_TASK_OUTPUT=interleave"), os.Stderr
-	doc, err := cmd.Output()
+// serve runs the app as a person does, with the repo's own serve task (mise run serve), on a free port, until it
+// answers; it returns the app's address and what stops it.
+func (w *walker) serve() (string, func()) {
+	w.T.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("mise-seo:update --json: %v", err)
+		w.T.Fatal(err)
 	}
-	if err := json.Unmarshal(doc[bytes.IndexByte(doc, '{'):], &all); err != nil || len(all.Pins) == 0 {
-		t.Fatalf("mise-seo:update --json isn't one JSON document of pins: %v\n%s", err, doc)
+	addr := "http://" + l.Addr().String()
+	l.Close()
+	cmd := exec.Command("mise", "run", "serve")
+	cmd.Dir, cmd.Env = w.Dir, w.Env("ADDR="+strings.TrimPrefix(addr, "http://"))
+	walk.OwnGroup(cmd)
+	var logs bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &logs, &logs
+	if err := cmd.Start(); err != nil {
+		w.T.Fatal(err)
 	}
-	if all.Moved != 0 {
-		t.Fatalf("mise-seo:update after the three moved %d more: %+v", all.Moved, all.Pins)
+	stop := func() { walk.KillGroup(cmd) }
+	for deadline := time.Now().Add(2 * time.Minute); time.Now().Before(deadline); time.Sleep(250 * time.Millisecond) {
+		if resp, err := http.Get(addr + "/"); err == nil {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+			return addr, stop
+		}
 	}
-	n.Pass("mise-seo:update --json: %d pins, none moved, each its newest", len(all.Pins))
-	n.MustTask("mise-seo:verify")
-	n.Pass("mise-seo:verify passes after: setup, the app's tests, then check")
-}
-
-// replace makes the one match of the pattern old in the file new.
-func replace(t *testing.T, path, old, new string) {
-	t.Helper()
-	s, re := read(t, path), regexp.MustCompile(old)
-	if n := len(re.FindAllString(s, -1)); n != 1 {
-		t.Fatalf("%s: %s matches %d times, not once", path, old, n)
-	}
-	must(t, os.WriteFile(path, []byte(re.ReplaceAllLiteralString(s, new)), 0o644))
-}
-
-func read(t *testing.T, path string) string {
-	t.Helper()
-	b, err := os.ReadFile(path)
-	must(t, err)
-	return string(b)
-}
-
-func must(t *testing.T, err error) {
-	t.Helper()
-	if err != nil {
-		t.Fatal(err)
-	}
+	stop()
+	w.T.Fatalf("the app (mise run serve) never answered on %s:\n%s", addr, logs.String())
+	return "", nil
 }

@@ -1,0 +1,24 @@
+# seo.toml: this app and search engines, for mise-seo and its tasks (github.com/joeblew999/mise-seo:
+# docs/seo/README.md). The tasks read it, so none needs an argument. Every line is optional: uncomment what differs
+# from its default.
+
+# The live site, which every task works on. No default: mise run seo:03-init --site https://app.example.com writes it.
+site = "http://localhost:8080"
+
+# Its Search Console property. Default: the site's Domain property (app.example.com → sc-domain:example.com).
+# property = "sc-domain:example.com"
+
+[lighthouse]
+# The pages mise run seo:07-lighthouse scores. Default: one URL per page of the live sitemap.
+# pages = ["/", "/about"]
+# mobile (what Google indexes) or desktop.
+# strategy = "mobile"
+# A category scoring under this fails.
+# min = 90
+
+[badges]
+# Where mise run seo:08-badges writes its badges (Lighthouse's four categories, the audit), for the README to show.
+# dir = "docs/badges"
+# The file whose <!-- seo scores --> … <!-- /seo scores --> lines mise run seo:08-badges rewrites with every page's
+# scores.
+# readme = "README.md"

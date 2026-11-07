@@ -1,8 +1,9 @@
-# Written by mise-seo: don't edit it. mise run mise-seo:init writes it again after upgrading.
-# Checks the repo on every push and pull request: it checks out, installs mise and the pinned tools (Go from go.mod),
-# then runs mise run mise-seo:verify (the repo's setup and test tasks if it has them, then check), the same as on
-# any machine. Shell steps only: no JavaScript actions.
-name: mise-seo
+# Written by mise-seo init: don't edit it. mise run seo:03-init writes it again after upgrading.
+# Checks the repo on every push and pull request: it checks out, installs mise and the pinned tools (Go from go.mod,
+# mise-seo from .mise/config.toml), then runs mise run seo:verify (the repo's setup and test tasks if it has them, an
+# app's tests auditing its local build, then check), the same as on any machine. It asks Google nothing: the live site
+# is mise run seo:06-audit's, after a deploy. Shell steps only: no JavaScript actions.
+name: seo
 
 on:
   push:
@@ -12,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mise-seo-${{ github.event.pull_request.number || github.ref }}
+  group: seo-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -48,6 +49,6 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH" MISE_TRUSTED_CONFIG_PATHS="$PWD"
           mise install
 
-      - name: mise run mise-seo:verify
+      - name: mise run seo:verify
         if: env.CHECKS == 'true'
-        run: mise run mise-seo:verify
+        run: mise run seo:verify

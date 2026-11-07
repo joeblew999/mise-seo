@@ -2,14 +2,14 @@
 # `mise use github:joeblew999/mise-seo` always gets what main is. It checks out (with the tags) and installs mise,
 # then runs mise run tool:release, the same as on any machine: the commit's v* tag or the next patch version, goreleaser's
 # binaries on the tag's GitHub release, where mise's github backend finds them, a new repo set up on the release, and the
-# version on proxy.golang.org. A v* tag pushed by hand releases that version. Shell steps only, as ci.yml.
+# version on proxy.golang.org, where an app's go.mod gets mise-seo's packages. A v* tag pushed by hand releases that version. Shell steps only, as ci.yml.
 name: release
 
 on:
   push:
     branches: [main]
     # Not the template's own pin of mise-seo, nor a test: neither changes anything in the tool.
-    paths: ["cmd/**", "misecheck.go", "walk/**", "templates/**", "!templates/.mise/config.toml", "!**/*_test.go", "go.mod", "go.sum", ".goreleaser.yaml", ".github/workflows/release.yml"]
+    paths: ["cmd/**", "seo/**", "gsxseo/**", "internal/**", "templates/**", "!templates/.mise/config.toml", "!**/*_test.go", "go.mod", "go.sum", ".goreleaser.yaml", ".github/workflows/release.yml"]
     tags: ["v*"]
 
 concurrency:

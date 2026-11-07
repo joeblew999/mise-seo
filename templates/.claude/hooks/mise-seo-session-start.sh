@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Written by mise-seo: don't edit it. After upgrading, mise run mise-seo:init writes it again.
+# Written by mise-seo init: don't edit it. After upgrading mise-seo, mise run seo:03-init writes it again.
 # A Claude Code cloud session starts on a bare Linux machine with only the repo cloned. Install mise, then every tool
-# the repo pins (Go from go.mod), then run each folder's own setup task if it has one, so `mise run …` works straight
-# away. Does nothing on your own machine.
-# Usage: session-start.sh [folder …], folders relative to the repo; with none, the repo's own folder.
+# the repo pins (Go from go.mod, mise-seo from .mise/config.toml), then run each folder's own setup task if it has one,
+# so `mise run seo` and every other task work straight away. Does nothing on your own machine.
+# Usage: mise-seo-session-start.sh [folder …], folders relative to the repo; with none, the repo's own folder.
 set -euo pipefail
 [ "${CLAUDE_CODE_REMOTE:-}" = true ] || exit 0
 export PATH="$HOME/.local/bin:$PATH"

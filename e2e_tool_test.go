@@ -1,7 +1,7 @@
-// The root's tool: task that isn't a one-line command: mise run tool:release, as mise-cloudflare's. It runs only from its own task
-// (MISE_TASK_NAME), so go test ./... never releases.
+// The root's tool: task that isn't a one-line command: mise run tool:release, as mise-intl's. It runs only when its
+// task names it (walk.OnlyByName), so go test ./... never releases.
 
-package misecheck_test
+package e2e
 
 import (
 	"flag"
@@ -49,7 +49,6 @@ func TestToolRelease(t *testing.T) {
 		t.Fatalf("go list -m: %v", err)
 	}
 	runShown(t, []string{"GOPROXY=https://proxy.golang.org", "GOFLAGS=-mod=mod"}, "go", "list", "-m", strings.TrimSpace(string(out))+"@"+tag)
-	runShown(t, nil, "mise", "run", "root:show-users") // the owner's repos that could move to it
 }
 
 // dryRunFlag is mise run tool:release --dry-run, passed as the test's flag (go test … -args -dry-run).

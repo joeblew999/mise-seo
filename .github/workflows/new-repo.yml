@@ -1,8 +1,7 @@
-# A new repo on each of the three operating systems, from the release just made: the walk on a new repo made the
-# README's way (an empty folder, mise-seo init at the new tag, then mise-seo:template), its numbered tasks each
-# checked: mise run new-repo:e2e --version <tag>; and a new mise tool repo, mise-seo new-tool at that tag, its own
-# root:verify run: mise run new-tool:e2e --version <tag>. It runs after the release run
-# has passed, so releases stay as fast as before, and by hand for any release. Shell steps only, as ci.yml.
+# A new repo on each of the three operating systems, from the release just made: the walk on a new repo made as
+# docs/seo/README.md says (an empty folder, mise-seo init at the new tag, then seo:template), its numbered tasks each
+# checked: mise run new-repo:e2e --version <tag>. It runs after the release run has passed, so releases stay as fast,
+# and by hand for any release. Shell steps only, as ci.yml.
 name: new-repo
 
 on:
@@ -68,12 +67,5 @@ jobs:
 
       # The new repo's tasks run in each OS's own shell (cmd on Windows): they have no shell syntax. --skip-deps: the
       # release is what's tried, not a build of this checkout (tool:install).
-      # After a release, its own run walked this on Ubuntu already (tool:release); by hand, every OS walks it.
-      - name: A new repo, made the README's way at the release, walked (mise run new-repo:e2e --version)
-        if: github.event_name == 'workflow_dispatch' || runner.os != 'Linux'
+      - name: A new repo, made as docs/seo/README.md says at the release, walked (mise run new-repo:e2e --version)
         run: mise run --skip-deps new-repo:e2e --version "$VERSION"
-
-      # A new mise tool repo, made by mise-seo new-tool at the release (copied from Go's module proxy), then its own
-      # root:verify. Here and not in ci.yml's root:verify: a tool repo new-tool makes has this walk too.
-      - name: A new mise tool repo, made by new-tool at the release, its own CI run (mise run new-tool:e2e --version)
-        run: mise run --skip-deps new-tool:e2e --version "$VERSION"

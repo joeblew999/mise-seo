@@ -33,7 +33,7 @@ func TestCommands(t *testing.T) {
 	if !slices.Equal(tasks, ours) {
 		t.Errorf("the tasks file's tasks are %v; commands has %v: the same, in the same order", tasks, ours)
 	}
-	for _, page := range []string{"../../templates/.claude/skills/mise-seo/SKILL.md", "../../templates/docs/mise-seo/README.md"} {
+	for _, page := range []string{"../../templates/.claude/skills/seo/SKILL.md", "../../templates/docs/seo/README.md"} {
 		b, err := os.ReadFile(page)
 		if err != nil {
 			t.Fatal(err)
