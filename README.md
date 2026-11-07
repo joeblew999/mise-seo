@@ -4,11 +4,26 @@
 [![release](https://img.shields.io/github/v/release/joeblew999/mise-seo)](https://github.com/joeblew999/mise-seo/releases)
 [![Go Reference](https://pkg.go.dev/badge/github.com/joeblew999/mise-seo.svg)](https://pkg.go.dev/github.com/joeblew999/mise-seo)
 
-How a Go web app answers search engines, through [mise](https://mise.jdx.dev), as
-[mise-intl](https://github.com/joeblew999/mise-intl) is its languages: `seo.Site`, the middleware that serves
-robots.txt, the sitemap and llms.txt and gives every page one address; an audit of the live site as Googlebot reads it;
-Lighthouse on Google's servers; the README's badges; and Google Search Console, each a numbered mise task. To use it in
-a repo, at its root:
+**The problem.** Getting a Go web app into Google properly takes a lot of small pieces, and each repo ends up doing
+them a little differently, or not at all:
+
+- what crawlers ask for, answered at the site's root: robots.txt, a sitemap of every page in every language, llms.txt
+  for agents; everything that isn't a page marked noindex; one https address for every page, other hosts and plain
+  http moved there;
+- every page's head as Google and link previews read it: a title and a description that fit Google's widths, a
+  canonical URL, reciprocal hreflang, Open Graph, the icon, the site's name on the home page;
+- knowing it's all right before a deploy and after it, not weeks later from Search Console: the live site fetched as
+  Googlebot fetches it, Lighthouse's four scores with the elements that cost them, Google's own verdict on each URL;
+- the keys Google wants (a PageSpeed Insights key, a Search Console service account) made once and kept out of the
+  repo, and all of it the same on every machine, in CI and in a Claude Code cloud session.
+
+**What mise-seo does.** It does all of that through [mise](https://mise.jdx.dev), for any Go web app, with
+[gsx](https://github.com/gsxhq/gsx) or without: `seo.Site`, the middleware that answers crawlers; `gsxseo.Head`, the
+head, in a gsx app; `audit.Audit`, which an app's own tests run on its local build; and the `mise-seo` binary, whose
+commands are numbered mise tasks, from `seo:03-init` to `seo:14-inspect`, the live audit, Lighthouse on Google's
+servers (no Node, no Chrome), the README's badges and Search Console among them. One command adds it to a repo, and
+`mise run seo` shows where the repo is at any time. Its keys come from fnox, its pin from `.mise/config.toml`, and its
+workflow checks the repo on every push. In a repo, at its root:
 
 ```sh
 mise exec "github:joeblew999/mise-seo[minimum_release_age=0s]@latest" -- mise-seo init --site https://app.example.com
@@ -16,7 +31,7 @@ mise run seo
 ```
 
 Everything a repo gets, and how to use it, is [templates/docs/seo/README.md](templates/docs/seo/README.md), which
-`init` writes into the repo as `docs/seo/README.md`. This README is for working on mise-seo itself.
+`init` writes into the repo as `docs/seo/README.md`. The rest of this README is for working on mise-seo itself.
 
 ## Working on mise-seo
 
