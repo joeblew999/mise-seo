@@ -1,5 +1,5 @@
 # A new repo on each of the three operating systems, from the release just made: the walk on a new repo made as
-# docs/seo/README.md says (an empty folder, mise-seo init at the new tag, then seo:template), its numbered tasks each
+# docs/seo/README.md says (an empty folder, mise-seo init at the new tag, then seo:template), its tasks each
 # checked: mise run new-repo:e2e --version <tag>. It runs after the release run has passed, so releases stay as fast,
 # and by hand for any release. Shell steps only, as ci.yml.
 name: new-repo

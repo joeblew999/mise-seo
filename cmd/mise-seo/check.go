@@ -9,7 +9,7 @@ import (
 	"github.com/joeblew999/mise-seo/seo/config"
 )
 
-// check is mise-seo check (seo:04-check): the repo's rules, each with what fixes it; exit 1 on any.
+// check is mise-seo check (seo:check): the repo's rules, each with what fixes it; exit 1 on any.
 func (r repo) check(args []string) {
 	f := flags("check")
 	jsonOut := f.Bool("json", false, "one JSON document on stdout")
@@ -41,9 +41,9 @@ func (r repo) rules() []string {
 	case err != nil:
 		problems = append(problems, fmt.Sprintf("%s: %v", config.File, err))
 	case c.Path == "":
-		problems = append(problems, config.File+" is missing: run mise run seo:03-init")
+		problems = append(problems, config.File+" is missing: run mise run seo:init")
 	case c.Site == "":
-		problems = append(problems, config.File+" has no site, which every task works on: mise run seo:03-init --site https://your.site")
+		problems = append(problems, config.File+" has no site, which every task works on: mise run seo:init --site https://your.site")
 	}
 	if p := r.apart(); p != "" {
 		problems = append(problems, p)
@@ -68,7 +68,7 @@ func (r repo) apart() string {
 	if pkgs == "" || pkgs == bin {
 		return ""
 	}
-	fix := "mise run seo:03-init moves go.mod's to the binary's"
+	fix := "mise run seo:init moves go.mod's to the binary's"
 	if older(bin, pkgs) {
 		fix = "for the binary at the packages' release, run " + initAt(pkgs)
 	}

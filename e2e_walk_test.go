@@ -1,10 +1,10 @@
-// Package e2e is this repo's end-to-end test: a walk of a repo's numbered tasks, through the repo's own mise file, on
+// Package e2e is this repo's end-to-end test: a walk of a repo's tasks, in the order a person meets them, through the repo's own mise file, on
 // mise-check's walk (github.com/joeblew999/mise-check/walk), which runs the steps in their order and does everything
 // that isn't mise-seo's. It sits at the top of this repo, beside the root mise.toml whose tasks run it:
 //
 //   - e2e_walk_test.go, this file: the walk tests the root's tasks run by name (TestWalkTemplate, TestWalkNewRepo),
 //     TestSteps, and what's mise-seo's in making a repo and running its app.
-//   - e2e_steps_test.go: the steps, the repo's numbered tasks in their order, each with its check.
+//   - e2e_steps_test.go: the steps, the repo's tasks in the order a person meets them, each with its check.
 //
 // e2e_tool_test.go is the release (mise run tool:release), mise_test.go checks that the mise files and the Go line
 // up, both ways, and gsx_test.go that mise-seo's packages but gsxseo need no gsx.
@@ -30,8 +30,8 @@ import (
 	"github.com/joeblew999/mise-check/walk"
 )
 
-// seoWalk is the walk: the template's numbered tasks (templates/.mise/tasks/mise-seo.toml), in their order, each
-// checked. Which repo is the test's name: the template where it is, or a new repo made as docs/seo/README.md says (at
+// seoWalk is the walk: the template's tasks (templates/.mise/tasks/mise-seo.toml), in the order a person meets them,
+// each checked. Which repo is the test's name: the template where it is, or a new repo made as docs/seo/README.md says (at
 // the release -version names or this checkout's build).
 var seoWalk = walk.Walk[*walker]{Steps: steps, New: newRepo, Prepare: withGo, Of: walkOf}
 

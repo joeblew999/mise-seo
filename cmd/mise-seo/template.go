@@ -70,7 +70,7 @@ func (r repo) template(args []string) {
 		trustConfig(r.dir, "mise.toml")
 	}
 	r.setUpApp()
-	fmt.Println("✓ the template's app: next, mise run seo, then mise run serve and, beside it, mise run seo:06-audit")
+	fmt.Println("✓ the template's app: next, mise run seo, then mise run serve and, beside it, mise run seo:audit")
 }
 
 // setUpApp installs what the template's app needs, as mise-intl's template does: the repo's own setup task (mise

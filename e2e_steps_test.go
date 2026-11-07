@@ -1,4 +1,4 @@
-// The steps: the repo's numbered tasks, in their order, each with its check (the walk tests walk them).
+// The steps: the repo's tasks, in the order a repo meets them, each with its check (the walk tests walk them).
 
 package e2e
 
@@ -14,41 +14,41 @@ import (
 // unless they're exactly the template's numbered tasks, in their order. The tasks that ask Google run as they do for a
 // person with no key yet: each says which it needs and how to get it, and fails.
 var steps = []walk.Step[*walker]{
-	{Task: "seo:03-init", Check: func(w *walker) {
+	{Task: "seo:init", Check: func(w *walker) {
 		before := w.Snapshot()
-		w.MustTask("seo:03-init")
+		w.MustTask("seo:init")
 		if changed := walk.Diff(before, w.Snapshot()); len(changed) > 0 {
-			w.T.Fatalf("seo:03-init changed %s: the repo isn't what init writes", strings.Join(changed, ", "))
+			w.T.Fatalf("seo:init changed %s: the repo isn't what init writes", strings.Join(changed, ", "))
 		}
-		w.Pass("seo:03-init changed nothing: the repo is what init writes")
+		w.Pass("seo:init changed nothing: the repo is what init writes")
 	}},
-	{Task: "seo:04-check", Check: func(w *walker) {
-		if out := w.MustTask("seo:04-check"); !strings.Contains(out, "✓ rules: pass") {
-			w.T.Fatalf("seo:04-check: %s", out)
+	{Task: "seo:check", Check: func(w *walker) {
+		if out := w.MustTask("seo:check"); !strings.Contains(out, "✓ rules: pass") {
+			w.T.Fatalf("seo:check: %s", out)
 		}
-		w.Pass("seo:04-check: the rules pass")
+		w.Pass("seo:check: the rules pass")
 		if out := w.MustTask("seo:verify"); !strings.Contains(out, "ok") || !strings.Contains(out, "✓ rules: pass") {
 			w.T.Fatalf("seo:verify: %s", out)
 		}
 		w.Pass("seo:verify: what the repo's GitHub workflow runs passes (its setup, its test auditing the app, then check)")
 	}},
-	{Task: "seo:05-show", Check: func(w *walker) {
+	{Task: "seo:show", Check: func(w *walker) {
 		var s struct {
 			Version, Site, Next string
 			App                 bool
 		}
-		w.TaskJSON(&s, "seo:05-show", "--json")
-		if !s.App || s.Site != "http://localhost:8080" || s.Next != "mise run seo:06-audit" {
-			w.T.Fatalf("seo:05-show --json: %+v", s)
+		w.TaskJSON(&s, "seo:show", "--json")
+		if !s.App || s.Site != "http://localhost:8080" || s.Next != "mise run seo:audit" {
+			w.T.Fatalf("seo:show --json: %+v", s)
 		}
-		w.Pass("seo:05-show: the app, its site %s, and next: %s", s.Site, s.Next)
+		w.Pass("seo:show: the app, its site %s, and next: %s", s.Site, s.Next)
 		// The version is the release .mise/config.toml pins (-version), or this checkout's build (local).
 		if want := strings.TrimPrefix(*walk.Version, "v"); want != "" && s.Version != want || s.Version == "" {
-			w.T.Fatalf("seo:05-show's version is %q, not %q: the one .mise/config.toml pins", s.Version, cmp.Or(want, "this checkout's build"))
+			w.T.Fatalf("seo:show's version is %q, not %q: the one .mise/config.toml pins", s.Version, cmp.Or(want, "this checkout's build"))
 		}
-		w.Pass("seo:05-show's version is the one .mise/config.toml pins: %s", s.Version)
+		w.Pass("seo:show's version is the one .mise/config.toml pins: %s", s.Version)
 	}},
-	{Task: "seo:06-audit", Check: func(w *walker) {
+	{Task: "seo:audit", Check: func(w *walker) {
 		addr, stop := w.serve()
 		defer stop()
 		var a struct {
@@ -57,20 +57,20 @@ var steps = []walk.Step[*walker]{
 			OK       bool
 			Problems []string
 		}
-		w.TaskJSON(&a, "seo:06-audit", "--json", "--site", addr)
+		w.TaskJSON(&a, "seo:audit", "--json", "--site", addr)
 		if !a.OK || a.URLs != 2 || a.Site != addr {
-			w.T.Fatalf("seo:06-audit --json --site %s: %+v", addr, a)
+			w.T.Fatalf("seo:audit --json --site %s: %+v", addr, a)
 		}
-		w.Pass("seo:06-audit --site %s: the app, run as a person runs it (mise run serve), read as Googlebot reads it: robots.txt, llms.txt and its %d pages pass", addr, a.URLs)
+		w.Pass("seo:audit --site %s: the app, run as a person runs it (mise run serve), read as Googlebot reads it: robots.txt, llms.txt and its %d pages pass", addr, a.URLs)
 	}},
-	{Task: "seo:07-lighthouse", Check: func(w *walker) { w.needsKey("seo:07-lighthouse", "PAGESPEED_API_KEY") }},
-	{Task: "seo:08-badges", Check: func(w *walker) { w.needsKey("seo:08-badges", "PAGESPEED_API_KEY") }},
-	{Task: "seo:09-setup", Skip: "it makes a Google Cloud project, its APIs and a service account with a person's own gcloud login, and stores the key in their fnox: the walk checks instead that each task that asks Google says what it needs"},
-	{Task: "seo:10-sites", Check: func(w *walker) { w.needsKey("seo:10-sites", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:09-setup") }},
-	{Task: "seo:11-submit", Check: func(w *walker) { w.needsKey("seo:11-submit", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:09-setup") }},
-	{Task: "seo:12-status", Check: func(w *walker) { w.needsKey("seo:12-status", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:09-setup") }},
-	{Task: "seo:13-todo", Check: func(w *walker) { w.needsKey("seo:13-todo", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:09-setup") }},
-	{Task: "seo:14-inspect", Check: func(w *walker) { w.needsKey("seo:14-inspect", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:09-setup") }},
+	{Task: "seo:lighthouse", Check: func(w *walker) { w.needsKey("seo:lighthouse", "PAGESPEED_API_KEY") }},
+	{Task: "seo:badges", Check: func(w *walker) { w.needsKey("seo:badges", "PAGESPEED_API_KEY") }},
+	{Task: "seo:setup", Skip: "it makes a Google Cloud project, its APIs and a service account with a person's own gcloud login, and stores the key in their fnox: the walk checks instead that each task that asks Google says what it needs"},
+	{Task: "seo:sites", Check: func(w *walker) { w.needsKey("seo:sites", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
+	{Task: "seo:submit", Check: func(w *walker) { w.needsKey("seo:submit", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
+	{Task: "seo:status", Check: func(w *walker) { w.needsKey("seo:status", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
+	{Task: "seo:todo", Check: func(w *walker) { w.needsKey("seo:todo", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
+	{Task: "seo:inspect", Check: func(w *walker) { w.needsKey("seo:inspect", "GOOGLE_SEARCH_CONSOLE_KEY", "seo:setup") }},
 }
 
 // needsKey runs a task that asks Google as a person with no key yet does (none in the environment, and fnox not

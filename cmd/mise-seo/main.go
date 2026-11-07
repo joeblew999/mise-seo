@@ -2,9 +2,9 @@
 // directory): the live site audited as Googlebot reads it, Lighthouse on Google's servers, the README's badges, and
 // Google Search Console. A repo gets it as it gets mise-intl: a binary on mise-seo's GitHub releases (goreleaser,
 // .goreleaser.yaml), which mise installs at the release the repo's .mise/config.toml pins (github:joeblew999/mise-seo).
-// The app imports mise-seo's packages from the same release's Go module. Each command is a task too, numbered in the
-// order a repo meets them (.mise/tasks/mise-seo.toml, which mise-seo init writes): mise run seo:<nn>-<command> runs
-// mise-seo <command>.
+// The app imports mise-seo's packages from the same release's Go module. Each command is a task too
+// (.mise/tasks/mise-seo.toml, which mise-seo init writes): mise run seo:<command> runs mise-seo <command>, and mise run
+// seo says which to run next.
 //
 // Each command is a file of its own, holding the method named for it (audit.go holds audit), so misecheck holds every
 // task of the template to the Go it runs, both ways. mise-seo show-help lists them.
@@ -26,22 +26,22 @@ import (
 // both) to them, word for word.
 type command struct{ task, does, when string }
 
-// commands are every command, as the template's tasks file has them, in its order: the numbered steps, in the order a
-// repo meets them, then the rest.
+// commands are every command, as the template's tasks file has them, in its order: the steps in the order a repo
+// meets them, then the rest.
 var commands = []command{
 	{"seo", "what's done for the repo, and what to run next", "first, and whenever you're unsure"},
-	{"seo:03-init", "mise-seo's files (its tasks, the workflow, the skill, the docs, the hook), seo.toml when the repo has none or no site (--site, the live site), and go.mod requiring mise-seo's packages at this release", "once, then after upgrading mise-seo"},
-	{"seo:04-check", "the repo's rules: mise-seo's files as this version writes them, its pin, seo.toml with a site, the packages in go.mod at the binary's release", "after a change to seo.toml or mise-seo's files; when it fails, run what it names"},
-	{"seo:05-show", "the same as mise run seo", "to see where the repo is"},
-	{"seo:06-audit", "the site as Googlebot reads it, robots.txt, the sitemap and every page in it: whatever would keep a page out of the index or look wrong in a result (--site: another server, a local build or a preview)", "after every production deploy, and on a local build before it"},
-	{"seo:07-lighthouse", "Lighthouse on the live site on Google's servers: performance, accessibility, best practices and SEO out of 100 for every page or the one named, what fails and on which elements, real users' Core Web Vitals; fails under seo.toml's min (--desktop: the desktop page)", "after a production deploy, and to fix a score"},
-	{"seo:08-badges", "Lighthouse on every page and the audit, then the README's badges and its scores table", "after a production release, then commit them"},
-	{"seo:09-setup", "the Google Cloud project, its Search Console and PageSpeed Insights APIs, and a service account key in fnox (asks first; needs gcloud auth login)", "once per person, before the tasks that ask Google"},
-	{"seo:10-sites", "the Search Console properties the service account can use; fails without Full access to seo.toml's", "after setup, and after adding the account to a property"},
-	{"seo:11-submit", "the sitemap submitted to Search Console, after a passing audit (asks first)", "once the site is live, and after its pages change"},
-	{"seo:12-status", "the sitemap's status in Search Console, and Google's index status of every URL in it", "to see what Google has of the site"},
-	{"seo:13-todo", "Google's verdict for every sitemap URL: indexed, waiting, duplicate or a problem; fails on a problem (--open: each problem's Search Console page)", "days after submitting, and whenever Search Console reports a problem"},
-	{"seo:14-inspect", "one URL, the home page or the one named: Google's verdict, last crawl and canonical, and its Search Console page (--open opens it)", "to look into one page"},
+	{"seo:init", "mise-seo's files (its tasks, the workflow, the skill, the docs, the hook), seo.toml when the repo has none or no site (--site, the live site), and go.mod requiring mise-seo's packages at this release", "once, then after upgrading mise-seo"},
+	{"seo:check", "the repo's rules: mise-seo's files as this version writes them, its pin, seo.toml with a site, the packages in go.mod at the binary's release", "after a change to seo.toml or mise-seo's files; when it fails, run what it names"},
+	{"seo:show", "the same as mise run seo", "to see where the repo is"},
+	{"seo:audit", "the site as Googlebot reads it, robots.txt, the sitemap and every page in it: whatever would keep a page out of the index or look wrong in a result (--site: another server, a local build or a preview)", "after every production deploy, and on a local build before it"},
+	{"seo:lighthouse", "Lighthouse on the live site on Google's servers: performance, accessibility, best practices and SEO out of 100 for every page or the one named, what fails and on which elements, real users' Core Web Vitals; fails under seo.toml's min (--desktop: the desktop page)", "after a production deploy, and to fix a score"},
+	{"seo:badges", "Lighthouse on every page and the audit, then the README's badges and its scores table", "after a production release, then commit them"},
+	{"seo:setup", "the Google Cloud project, its Search Console and PageSpeed Insights APIs, and a service account key in fnox (asks first; needs gcloud auth login)", "once per person, before the tasks that ask Google"},
+	{"seo:sites", "the Search Console properties the service account can use; fails without Full access to seo.toml's", "after setup, and after adding the account to a property"},
+	{"seo:submit", "the sitemap submitted to Search Console, after a passing audit (asks first)", "once the site is live, and after its pages change"},
+	{"seo:status", "the sitemap's status in Search Console, and Google's index status of every URL in it", "to see what Google has of the site"},
+	{"seo:todo", "Google's verdict for every sitemap URL: indexed, waiting, duplicate or a problem; fails on a problem (--open: each problem's Search Console page)", "days after submitting, and whenever Search Console reports a problem"},
+	{"seo:inspect", "one URL, the home page or the one named: Google's verdict, last crawl and canonical, and its Search Console page (--open opens it)", "to look into one page"},
 	{"seo:verify", "what the repo's GitHub workflow runs: its setup and test tasks, then check", "before every push"},
 	{"seo:template", "the template's little app, its pages answering search engines as the audit wants; it never writes over a file", "only in a repo with no Go program yet"},
 	{"seo:show-version", "its version", "to say which mise-seo this is"},
@@ -51,7 +51,7 @@ var commands = []command{
 // help is show-help's text: every command, from commands, and the flags.
 var help = func() string {
 	var b strings.Builder
-	b.WriteString("mise-seo: how the app answers search engines, from its seo.toml. Each command is a task, mise run seo:<nn>-<command>:\n\n")
+	b.WriteString("mise-seo: how the app answers search engines, from its seo.toml. Each command is a task, mise run seo:<command>,\nin the order a repo meets them:\n\n")
 	for _, c := range commands {
 		fmt.Fprintf(&b, "  %-32s %s\n", "mise run "+c.task, c.does)
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 // TestSearchEngines: the app as Googlebot reads it, over HTTP: robots.txt, the sitemap, llms.txt and every page pass
-// mise-seo's audit, which mise run seo:06-audit runs on the live site, so a page Google couldn't index fails here first.
+// mise-seo's audit, which mise run seo:audit runs on the live site, so a page Google couldn't index fails here first.
 func TestSearchEngines(t *testing.T) {
 	srv := httptest.NewServer(handler())
 	defer srv.Close()

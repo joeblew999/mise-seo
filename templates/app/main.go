@@ -1,7 +1,7 @@
 // Command app is the template's little app: two pages in plain Go (net/http, html/template; no gsx) behind seo.Site,
 // which answers search engines at the paths they ask for: robots.txt, the sitemap, llms.txt, noindex on whatever isn't
 // a page, and one address for every page. Each page's <head> says what Google reads of it, which mise-seo's audit
-// checks (mise run seo:06-audit). go run ./app serves it at http://localhost:8080 (ADDR to change it), seo.toml's site
+// checks (mise run seo:audit). go run ./app serves it at http://localhost:8080 (ADDR to change it), seo.toml's site
 // on this machine.
 package main
 

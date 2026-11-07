@@ -24,7 +24,7 @@ var categories = []struct{ id, name, title string }{
 	{"best-practices", "best practices", "Best practices"}, {"seo", "seo", "SEO"},
 }
 
-// badges is mise-seo badges (seo:08-badges): Lighthouse on every page and the audit, then an SVG badge per Lighthouse
+// badges is mise-seo badges (seo:badges): Lighthouse on every page and the audit, then an SVG badge per Lighthouse
 // category into seo.toml's [badges] dir (the lowest page's score: a badge never flatters) and one for the audit, and
 // the README's scores block (seo.toml's [badges] readme) rewritten with every page's scores. Run it after a production
 // release, and commit what it wrote.
@@ -100,7 +100,7 @@ func stampScores(readme string, reports []pagespeed.Report, strategy string) {
 		}
 		t.WriteString("\n")
 	}
-	fmt.Fprintf(&t, "\nLighthouse %s on Google's servers (PageSpeed Insights), %s: `mise run seo:08-badges` writes this table and the badges.\n\n",
+	fmt.Fprintf(&t, "\nLighthouse %s on Google's servers (PageSpeed Insights), %s: `mise run seo:badges` writes this table and the badges.\n\n",
 		strategy, time.Now().UTC().Format("2006-01-02"))
 	writeFile(readme, []byte(s[:i]+t.String()+s[j:]))
 }

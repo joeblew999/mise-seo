@@ -41,7 +41,7 @@ func secret(name string) string {
 }
 
 // noConsoleKey is what a command that asks Search Console says without the key.
-var noConsoleKey = errors.New(consoleKey + " is neither in the environment nor in fnox: mise run seo:09-setup makes a service account and stores its key in fnox (once per person)")
+var noConsoleKey = errors.New(consoleKey + " is neither in the environment nor in fnox: mise run seo:setup makes a service account and stores its key in fnox (once per person)")
 
 // console is a Search Console client for the property of seo.toml's site, with the service account key's token, and
 // the key; without the key it fails, saying how to make one.
@@ -73,7 +73,7 @@ func access(sites []searchconsole.Site, property string) bool {
 
 // noAccess is what a command says when the service account lacks Full access to the property.
 func noAccess(key searchconsole.Key, property string) error {
-	return fmt.Errorf("%s has no Full access to %s: Search Console → the property → Settings → Users and permissions → Add user (Full), then mise run seo:10-sites", key.ClientEmail, property)
+	return fmt.Errorf("%s has no Full access to %s: Search Console → the property → Settings → Users and permissions → Add user (Full), then mise run seo:sites", key.ClientEmail, property)
 }
 
 // consoleWithAccess is console, failing unless the account has Full access to the property: every command that asks
@@ -97,7 +97,7 @@ func pagespeedAuth(ctx context.Context) pagespeed.Auth {
 	raw := secret(consoleKey)
 	if raw == "" {
 		fail(fmt.Errorf("Lighthouse needs %s (a free key: Google Cloud console → APIs & Services → Credentials → API key, "+
-			"restricted to the PageSpeed Insights API; then fnox set %s) or %s (mise run seo:09-setup), in the environment or in fnox",
+			"restricted to the PageSpeed Insights API; then fnox set %s) or %s (mise run seo:setup), in the environment or in fnox",
 			pagespeedKey, pagespeedKey, consoleKey))
 	}
 	key, err := searchconsole.ParseKey([]byte(raw))

@@ -40,8 +40,8 @@ func configTool() miseconfig.Tool {
 	return miseconfig.Tool{Name: self, Release: release, Template: tmpl, Init: initTask}
 }
 
-// initRepo is mise-seo init (seo:03-init): the repo set up for mise-seo, as mise-intl's init sets one up for intl. First
-// the template's tool files (templates.Tool: the numbered tasks, and .mise/config.toml pinning this build, the release
+// initRepo is mise-seo init (seo:init): the repo set up for mise-seo, as mise-intl's init sets one up for intl. First
+// the template's tool files (templates.Tool: the tasks, and .mise/config.toml pinning this build, the release
 // that ran it or local; the GitHub workflow, the Claude Code hook and skill, the docs, the .gitignore), each at its
 // path, and of the repo's own files only mise-seo's parts; then seo.toml, the repo's own, when it has none or sets no
 // site (--site); then, in a Go module, mise-seo's packages required in its go.mod at this release. Every step leaves
@@ -311,7 +311,7 @@ func (r repo) seoToml(site string) {
 		fmt.Printf("✓ %s is the repo's own: left as it is\n", config.File)
 	}
 	if c, err := config.Find(r.dir); err == nil && c.Site == "" {
-		fmt.Printf("· %s has no site, which every task works on: mise run seo:03-init --site https://your.site (the live one; mise run seo:template sets the template app's, on this machine)\n", config.File)
+		fmt.Printf("· %s has no site, which every task works on: mise run seo:init --site https://your.site (the live one; mise run seo:template sets the template app's, on this machine)\n", config.File)
 	}
 }
 

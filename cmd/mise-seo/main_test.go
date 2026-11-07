@@ -29,7 +29,7 @@ func TestShow(t *testing.T) {
 		t.Fatalf("a go.mod, no site: next %q, want init --site, for one problem: %q", s.Next, s.Problems)
 	}
 	r.initRepo([]string{"--site", "https://shop.example.com/"})
-	if s := r.where(); s.Next != "mise run seo:06-audit" || s.Site != "https://shop.example.com" || len(s.Problems) > 0 {
+	if s := r.where(); s.Next != "mise run seo:audit" || s.Site != "https://shop.example.com" || len(s.Problems) > 0 {
 		t.Fatalf("init --site: next %q, site %q, problems %q; want the audit next, on the site", s.Next, s.Site, s.Problems)
 	}
 	b, _ := os.ReadFile("../../templates/seo.toml")

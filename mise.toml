@@ -1,7 +1,7 @@
 # mise-seo's own tasks, for working on mise-seo itself: run every task here, at the top. A repo that uses mise-seo
 # gets nothing from this file: it gets mise-seo's binary and its tasks from mise-seo init (templates/), and its Go
-# packages from the module. The steps a person takes are a repo's own numbered tasks (seo:03-init to 14-inspect, in its
-# .mise/tasks); the walks (e2e_walk_test.go) run them in order, on the template or on a new repo made from it. Each
+# packages from the module. The steps a person takes are a repo's own tasks (seo:init to seo:inspect, in its
+# .mise/tasks), in an order the walk and the docs page say; the walks (e2e_walk_test.go) run them in order, on the template or on a new repo made from it. Each
 # task here is named for what it acts on (noun:verb):
 #   root: this repo itself
 #     mise run root:ci                 what GitHub's CI runs, here the same: the checks at once, then the walks in turn
@@ -13,7 +13,7 @@
 #     mise run tool:release            a release from the commit checked out, as release.yml runs it (--dry-run)
 #   template: the template, templates/, a whole repo that runs where it is
 #     mise run template:check-mise     misecheck on its tasks, both ways: the binary's Go, the walk, the skill, the docs page
-#     mise run template:e2e            the walk on it, where it is: its numbered tasks in their order, each checked
+#     mise run template:e2e            the walk on it, where it is: its tasks in the order a person meets them, each checked
 #   new-repo: a new repo, made from nothing as docs/seo/README.md says, by the walk and gone after it
 #     mise run new-repo:e2e            the walk on it (--version: at a release)
 # Each runs what it needs first: run the furthest you need.
@@ -63,7 +63,7 @@ description = "TestTemplateMise: misecheck on the template's tasks file, both wa
 run = 'go test . -run "^TestTemplateMise$" -count=1 -v'
 
 [tasks."template:e2e"]
-description = "TestWalkTemplate: the template, templates/, where it is: its numbered tasks (seo:03-init to 14-inspect) in their order, through its own mise file, each checked by what a person would see it do (e2e_steps_test.go): the app served and audited as Googlebot reads it, and each task that asks Google saying what key it needs. After tool:install"
+description = "TestWalkTemplate: the template, templates/, where it is: its tasks (seo:init to seo:inspect) in the order a person meets them, through its own mise file, each checked by what a person would see it do (e2e_steps_test.go): the app served and audited as Googlebot reads it, and each task that asks Google saying what key it needs. After tool:install"
 depends = ["tool:install"]
 run = 'go test . -run "^TestWalkTemplate$" -count=1 -v -timeout 15m'
 

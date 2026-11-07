@@ -1,5 +1,5 @@
 // Package templates is mise-seo's template, embedded for mise-seo: a whole repo that runs where it is, in two halves.
-// The tool's half is what mise-seo init writes into any repo, at the same paths: the numbered tasks and mise-seo's pin
+// The tool's half is what mise-seo init writes into any repo, at the same paths: the tasks and mise-seo's pin
 // (.mise/), the GitHub workflow, the Claude Code hook and its settings, the agent skill, the docs and the .gitignore.
 // The rest is the template's little app, which mise-seo template writes into a repo with no Go program yet: two pages
 // in plain Go behind seo.Site (app/), their test auditing them as Googlebot reads them, the mise.toml of its tasks,

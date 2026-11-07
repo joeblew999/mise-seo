@@ -15,7 +15,7 @@ type report struct {
 	Next     string   `json:"next"`     // the task to run next
 }
 
-// show is mise-seo show (seo:05-show), and mise-seo with no command (mise run seo): the steps, which are done for this
+// show is mise-seo show (seo:show), and mise-seo with no command (mise run seo): the steps, which are done for this
 // repo, and the next one. It asks no server anything, so it's quick.
 func (r repo) show(args []string) {
 	f := flags("show")
@@ -28,11 +28,11 @@ func (r repo) show(args []string) {
 	}
 	mark := map[bool]string{true: "✓", false: "·"}
 	fmt.Printf("mise-seo %s; site: %s\n", s.Version, or(s.Site, "none"))
-	fmt.Printf("%s 03-init    mise-seo's files, as this version writes them, and seo.toml\n", mark[!s.initDue()])
+	fmt.Printf("%s init       mise-seo's files, as this version writes them, and seo.toml\n", mark[!s.initDue()])
 	fmt.Printf("%s app        Go of the repo's own (or the template's app: mise run seo:template)\n", mark[s.App])
 	fmt.Printf("%s site       seo.toml's live site, which every task works on\n", mark[s.Site != ""])
-	fmt.Printf("%s 04-check   the repo's rules\n", mark[len(s.Problems) == 0])
-	fmt.Println("· 06-audit   the site as Googlebot reads it, after every deploy; then Lighthouse and Google (mise run seo:show-help)")
+	fmt.Printf("%s check      the repo's rules\n", mark[len(s.Problems) == 0])
+	fmt.Println("· audit      the site as Googlebot reads it, after every deploy; then Lighthouse and Google (mise run seo:show-help)")
 	for _, p := range s.Problems {
 		fmt.Println("  ✗ " + p)
 	}
@@ -56,9 +56,9 @@ func (r repo) where() report {
 	case s.Site == "":
 		s.Next = initTask + " --site https://your.site"
 	case len(s.Problems) > 0:
-		s.Next = "mise run seo:04-check"
+		s.Next = "mise run seo:check"
 	default:
-		s.Next = "mise run seo:06-audit"
+		s.Next = "mise run seo:audit"
 	}
 	return s
 }
@@ -67,4 +67,4 @@ func (r repo) where() report {
 func (s report) initDue() bool { return s.Next == initTask }
 
 // initTask is the task that writes init's files again.
-const initTask = "mise run seo:03-init"
+const initTask = "mise run seo:init"

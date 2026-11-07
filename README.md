@@ -20,7 +20,7 @@ them a little differently, or not at all:
 **What mise-seo does.** It does all of that through [mise](https://mise.jdx.dev), for any Go web app, with
 [gsx](https://github.com/gsxhq/gsx) or without: `seo.Site`, the middleware that answers crawlers; `gsxseo.Head`, the
 head, in a gsx app; `audit.Audit`, which an app's own tests run on its local build; and the `mise-seo` binary, whose
-commands are numbered mise tasks, from `seo:03-init` to `seo:14-inspect`, the live audit, Lighthouse on Google's
+commands are mise tasks, `seo:init` to `seo:inspect` (`mise run seo:<command>`), the live audit, Lighthouse on Google's
 servers (no Node, no Chrome), the README's badges and Search Console among them. One command adds it to a repo, and
 `mise run seo` shows where the repo is at any time. Its keys come from fnox, its pin from `.mise/config.toml`, and its
 workflow checks the repo on every push. In a repo, at its root:
@@ -81,13 +81,15 @@ binary and packages at one release). [docs/mise-check/README.md](docs/mise-check
 
 ### Tests
 
-**The walk.** A repo's steps are its numbered tasks, `seo:03-init` to `seo:14-inspect`
-([templates/.mise/tasks/mise-seo.toml](templates/.mise/tasks/mise-seo.toml)), after steps 00 to 02 (the repo's git,
-`mise install`, its own `setup`). `TestSteps` holds the walk's steps to them, in order. The walk runs each through the
+**The walk.** A repo's steps are its tasks, `seo:init` to `seo:inspect`
+([templates/.mise/tasks/mise-seo.toml](templates/.mise/tasks/mise-seo.toml)), in the order a repo meets them, after
+its git, `mise install` and its own `setup`. That order is the walk's (`steps` in
+[e2e_steps_test.go](e2e_steps_test.go)) and the docs page's, never the tasks' names; `TestSteps` holds the walk to the
+tasks file. The walk runs each through the
 repo's own mise file, as a person does, each with its check ([e2e_steps_test.go](e2e_steps_test.go)): `init` writes
 exactly what's there; `check` and the workflow's `verify` pass; `show` says what's next; the app, served by its own
 `serve` task, passes the audit as Googlebot reads it; and each task that asks Google, run with no key, says the site
-and the key it needs. `seo:09-setup` needs a person's own gcloud login, so the walk says so instead. It walks two
+and the key it needs. `seo:setup` needs a person's own gcloud login, so the walk says so instead. It walks two
 repos, each on its own mise only (`MISE_CEILING_PATHS`), on [mise-check's `walk`](https://github.com/joeblew999/mise-check):
 
 - **The template**, [templates/](templates/), in place.

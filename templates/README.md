@@ -6,7 +6,7 @@ whatever isn't a page noindex and gives every page one address; each page's `<he
 
 - `go run ./app` (`mise run serve`): the app, at http://localhost:8080, `seo.toml`'s site on this machine.
 - `go test ./...` (`mise run test`): its tests, which audit it as Googlebot reads it.
-- `mise-seo` (`mise run seo`): what's done, and what to run next. Beside `mise run serve`, `mise run seo:06-audit`
+- `mise-seo` (`mise run seo`): what's done, and what to run next. Beside `mise run serve`, `mise run seo:audit`
   audits the app as it runs.
 - [docs/seo/README.md](docs/seo/README.md): mise-seo in this repo, every command.
 

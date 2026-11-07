@@ -19,7 +19,7 @@ type todoReport struct {
 	Findings []finding `json:"findings"`
 }
 
-// todo is mise-seo todo (seo:13-todo): Google's verdict for every sitemap URL, from its index (not a live fetch):
+// todo is mise-seo todo (seo:todo): Google's verdict for every sitemap URL, from its index (not a live fetch):
 // indexed as its own page, waiting for a crawl, a duplicate of another, or a problem, each with its Search Console
 // link; exit 1 on a problem, and --open opens each problem's page there (Test live URL, Request indexing, which have no
 // API).
